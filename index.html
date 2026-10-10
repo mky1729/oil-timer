@@ -4,165 +4,366 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#e8e9e7">
-<title>Oil Timer — 3 minutes of calm</title>
+<title>Oil Timer - Pixi oil flow</title>
 <style>
-:root{font-family:"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#53575b}
-*{box-sizing:border-box}body{margin:0;min-height:100vh;overflow-x:hidden;background:#e4e7e7}
+:root{font-family:"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#4e5557}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;overflow-x:hidden;background:#e4e7e7}
 .room{min-height:100vh;position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.wall{position:absolute;inset:0 0 26% 0;z-index:-3;background:radial-gradient(ellipse at 48% 24%,#f2f3f0 0%,#e0e4e3 55%,#c7cfce 100%)}
+.wall{position:absolute;inset:0 0 26% 0;z-index:-3;background:radial-gradient(ellipse at 48% 24%,#f2f3f0 0%,#dfe4e3 56%,#c7cfce 100%)}
 .wall:after{content:"";position:absolute;inset:0;opacity:.22;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888888' filter='url(%23n)' opacity='.19' d='M0 0h140v140H0z'/%3E%3C/svg%3E")}
 .wall:before{content:"";position:absolute;right:7%;top:9%;width:min(22vw,210px);height:min(25vw,240px);border:11px solid #675a54;box-shadow:0 8px 22px #4c403522,inset 0 0 0 1px #fff6;background:linear-gradient(135deg,#faf7ef,#d8dddc);opacity:.34;transform:rotate(.6deg)}
 .tabletop{position:absolute;top:74%;bottom:0;left:0;right:0;z-index:-2;border-top:7px solid #b88e70;background:repeating-linear-gradient(1deg,transparent 0 10px,#79533c0d 11px 12px,transparent 13px 32px),linear-gradient(90deg,#9c6b4c,#d7ae88 29%,#bd8b66 64%,#9d6f50);box-shadow:inset 0 16px 22px #79553e3a,0 -4px 24px #ffffff80}
 .tabletop:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(91deg,transparent 0 95px,#6f49381b 97px 99px,transparent 101px 210px),linear-gradient(180deg,#ffffff24,#2c170a13);opacity:.62}
-.light{position:absolute;left:50%;bottom:17%;width:460px;height:90px;transform:translateX(-50%);background:#48352542;filter:blur(30px);border-radius:50%;z-index:-1}
+.light{position:absolute;left:50%;bottom:17%;width:470px;height:92px;transform:translateX(-50%);background:#49362742;filter:blur(30px);border-radius:50%;z-index:-1}
 .app{width:min(100%,930px);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 22px 32px}
 .header{text-align:center;margin:0 0 2px;text-shadow:0 1px 8px #ffffffbc}
-.eyebrow{font-size:10px;letter-spacing:.42em;font-weight:600;color:#8b9292}.header h1{margin:8px 0 0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,5vw,43px);font-weight:400;letter-spacing:.085em;color:#505657}.subtitle{margin:9px 0 0;font-size:11px;letter-spacing:.19em;color:#8a9190}
-.timer-stage{position:relative;width:min(410px,82vw);margin:-6px auto -8px;filter:drop-shadow(11px 16px 10px #42392d34)}
-.timer-stage svg{display:block;width:100%;height:auto;overflow:visible}
-.glass-body{fill:url(#glassBody);stroke:#ffffffc9;stroke-width:3}.glass-outline{fill:none;stroke:#8299a09c;stroke-width:6}.glass-inner{fill:none;stroke:#fff;stroke-opacity:.68;stroke-width:2}
-.drop{opacity:.92}.oil-thread{stroke-linecap:round;filter:drop-shadow(0 0 3px #fff8)}.controls{z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:12px}
+.eyebrow{font-size:10px;letter-spacing:.42em;font-weight:600;color:#8b9292}
+.header h1{margin:8px 0 0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,5vw,43px);font-weight:400;letter-spacing:.085em;color:#505657}
+.subtitle{margin:9px 0 0;font-size:11px;letter-spacing:.19em;color:#8a9190}
+.timer-stage{position:relative;width:min(360px,78vw);aspect-ratio:400/620;margin:-4px auto 10px;filter:drop-shadow(11px 16px 10px #42392d34)}
+#pixi-stage{position:absolute;inset:0}
+#pixi-stage canvas{display:block;width:100%;height:100%}
+.glass-overlay{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.controls{z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:12px;margin-top:4px}
 .clock{font:300 35px/1 Georgia,"Times New Roman",serif;letter-spacing:.1em;font-variant-numeric:tabular-nums;color:#50595b;text-shadow:0 1px 10px #ffffffb0}
 .actions{display:flex;gap:12px;align-items:center}
 button{appearance:none;border:1px solid #fff9;background:#ffffffa9;color:#566160;padding:12px 27px;border-radius:999px;cursor:pointer;font:500 12px/1 "Segoe UI",sans-serif;letter-spacing:.16em;min-width:105px;box-shadow:0 4px 18px #6d67502b;backdrop-filter:blur(12px);transition:background .2s,transform .2s}
-button:hover{background:#fff;transform:translateY(-1px)}button:focus-visible{outline:3px solid #008c94;outline-offset:3px}
-button.primary{background:#526b68;color:white;border-color:#526b68}button.primary:hover{background:#375955}
+button:hover{background:#fff;transform:translateY(-1px)}
+button:focus-visible{outline:3px solid #008c94;outline-offset:3px}
+button.primary{background:#526b68;color:white;border-color:#526b68}
+button.primary:hover{background:#375955}
 .caption{font-size:11px;letter-spacing:.12em;color:#74807e;text-shadow:0 1px 8px #fff}
-@media(max-height:780px){.app{justify-content:flex-start}.timer-stage{width:min(305px,65vh);margin-top:-4px}.header h1{font-size:31px}.subtitle{margin-top:4px}.clock{font-size:30px}}
+@media(max-height:780px){.app{justify-content:flex-start}.timer-stage{width:min(262px,58vh);margin-top:-4px;margin-bottom:14px}.header h1{font-size:31px}.subtitle{margin-top:4px}.clock{font-size:30px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 </style>
 </head>
 <body>
 <main class="room">
- <div class="wall" aria-hidden="true"></div><div class="tabletop" aria-hidden="true"></div><div class="light" aria-hidden="true"></div>
+ <div class="wall" aria-hidden="true"></div>
+ <div class="tabletop" aria-hidden="true"></div>
+ <div class="light" aria-hidden="true"></div>
  <div class="app">
- <header class="header"><div class="eyebrow">A MOMENT OF STILLNESS</div><h1>Oil Timer</h1><p class="subtitle">ふたつの色が、ゆっくり時を刻む。</p></header>
- <div class="timer-stage">
- <svg viewBox="0 0 400 620" role="img" aria-label="くびれた透明のガラス容器の中心からピンクと青緑のオイルが落ちるアニメーション">
- <defs>
-  <linearGradient id="glassBody" x1="0" x2="1"><stop stop-color="#fff" stop-opacity=".45"/><stop offset=".09" stop-color="#f8ffff" stop-opacity=".08"/><stop offset=".48" stop-color="#d8f8fa" stop-opacity=".035"/><stop offset=".56" stop-color="#ffffff" stop-opacity=".14"/><stop offset=".88" stop-color="#fff" stop-opacity=".08"/><stop offset="1" stop-color="#fff" stop-opacity=".55"/></linearGradient>
-  <linearGradient id="edge" x1="0" x2="1"><stop stop-color="#fff" stop-opacity=".85"/><stop offset=".26" stop-color="#b5c6cc" stop-opacity=".22"/><stop offset=".72" stop-color="#fff" stop-opacity=".23"/><stop offset="1" stop-color="#fff" stop-opacity=".9"/></linearGradient>
-  <linearGradient id="pink" x1="0" x2="1" y1="0" y2=".7"><stop stop-color="#ffb0d2" stop-opacity=".91"/><stop offset=".38" stop-color="#f52c92" stop-opacity=".78"/><stop offset="1" stop-color="#b92bb0" stop-opacity=".65"/></linearGradient>
-  <linearGradient id="teal" x1="0" x2="1" y1="0" y2=".8"><stop stop-color="#b1fff3" stop-opacity=".92"/><stop offset=".45" stop-color="#19d6c8" stop-opacity=".8"/><stop offset="1" stop-color="#038aa2" stop-opacity=".73"/></linearGradient>
-  <linearGradient id="reservoir" x1="0" x2="1" y1="0" y2=".2"><stop stop-color="#ff4ea9" stop-opacity=".62"/><stop offset=".44" stop-color="#ec47ba" stop-opacity=".66"/><stop offset=".50" stop-color="#7fe6dc" stop-opacity=".52"/><stop offset=".62" stop-color="#24d4cb" stop-opacity=".66"/><stop offset="1" stop-color="#0a95b5" stop-opacity=".72"/></linearGradient>
-  <linearGradient id="lowerPool" x1="0" x2=".5" y1="0" y2="1"><stop stop-color="#ff7fc3" stop-opacity=".49"/><stop offset=".6" stop-color="#24cfcb" stop-opacity=".6"/><stop offset="1" stop-color="#038eaf" stop-opacity=".65"/></linearGradient>
-  <radialGradient id="shine" cx=".29" cy=".2" r=".8"><stop stop-color="#fff" stop-opacity=".77"/><stop offset=".4" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
-  <clipPath id="interior"><path d="M103 43 Q94 45 94 61 L94 123 C94 194 138 244 179 309 C138 374 94 442 94 532 L94 558 Q94 567 108 567 L292 567 Q306 567 306 558 L306 532 C306 442 262 374 221 309 C262 244 306 194 306 123 L306 61 Q306 45 297 43Z"/></clipPath>
- </defs>
- <!-- Rear rim and transparent glass -->
- <path class="glass-outline" d="M91 37 Q83 37 83 57 L83 126 C83 194 135 258 168 309 C135 366 83 448 83 532 L83 566 Q83 582 104 582 L296 582 Q317 582 317 566 L317 532 C317 448 265 366 232 309 C265 258 317 194 317 126 L317 57 Q317 37 309 37Z"/>
- <path class="glass-body" d="M91 37 Q83 37 83 57 L83 126 C83 194 135 258 168 309 C135 366 83 448 83 532 L83 566 Q83 582 104 582 L296 582 Q317 582 317 566 L317 532 C317 448 265 366 232 309 C265 258 317 194 317 126 L317 57 Q317 37 309 37Z"/>
- <g clip-path="url(#interior)">
-  <path id="upper-oil" fill="url(#reservoir)" d="M94 84 L306 84 L306 124 Q295 162 266 204 Q235 250 200 295 Q165 250 134 204 Q105 162 94 124Z"/>
-  <path id="upper-surface" d="M96 85 Q148 78 200 86 T304 85" fill="none" stroke="#ffe8fb" stroke-opacity=".8" stroke-width="4"/>
-  <path id="pink-thread" class="oil-thread" d="M193 286 C190 297 190 303 193 314" fill="none" stroke="url(#pink)" stroke-width="4" stroke-opacity=".72"/>
-  <path id="teal-thread" class="oil-thread" d="M207 286 C210 297 210 303 207 314" fill="none" stroke="url(#teal)" stroke-width="4" stroke-opacity=".72"/>
-  <g id="droplets"></g>
-  <path id="pool" fill="url(#lowerPool)" d="M105 560 L295 560 L295 565 L105 565Z"/>
-  <g id="beads"></g>
-  <path d="M108 558 Q190 567 291 558" stroke="#fff" stroke-opacity=".25" stroke-width="2" fill="none"/>
- </g>
- <path class="glass-inner" d="M98 62 L98 124 C98 202 144 254 181 308 M219 308 C256 254 302 202 302 124 L302 62 M181 312 C148 377 98 451 98 528 M219 312 C252 377 302 451 302 528"/>
- <path d="M88 45 Q94 39 106 39 L294 39 Q306 40 312 47" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
- <path d="M99 43 L301 43" stroke="#fff" stroke-opacity=".86" stroke-width="3" stroke-linecap="round"/>
- <path d="M88 570 Q91 580 109 580 H291 Q309 580 312 570" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
- <path d="M104 571 Q200 575 296 571" fill="none" stroke="#fff" stroke-opacity=".66" stroke-width="3"/>
- <path d="M92 85 Q87 176 145 276" stroke="white" stroke-opacity=".36" stroke-width="5" fill="none" stroke-linecap="round"/>
- <path d="M309 90 Q313 175 255 276" stroke="white" stroke-opacity=".43" stroke-width="3" fill="none" stroke-linecap="round"/>
- <path d="M149 360 Q103 440 91 503" stroke="white" stroke-opacity=".35" stroke-width="4" fill="none" stroke-linecap="round"/>
- <path d="M251 360 Q297 439 309 508" stroke="white" stroke-opacity=".33" stroke-width="4" fill="none" stroke-linecap="round"/>
- <path d="M164 308 Q200 330 236 308" stroke="#ffffff" stroke-opacity=".22" stroke-width="10" fill="none" stroke-linecap="round"/>
- </svg>
- </div>
- <section class="controls" aria-label="タイマー操作">
- <div id="clock" class="clock" role="timer" aria-label="残り時間">03:00</div>
- <div class="actions"><button id="start" class="primary">スタート</button><button id="reset">リセット</button></div>
- <div id="status" class="caption" aria-live="polite">静かな3分間を。</div>
- </section>
+  <header class="header">
+   <div class="eyebrow">A MOMENT OF STILLNESS</div>
+   <h1>Oil Timer</h1>
+   <p class="subtitle">ふたつの色が、ゆっくり落ちる。</p>
+  </header>
+  <div class="timer-stage" aria-label="透明容器の中央からピンクと青緑のオイルが落ちるアニメーション">
+   <div id="pixi-stage"></div>
+   <svg class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
+    <defs>
+     <linearGradient id="glassBody" x1="0" x2="1">
+      <stop stop-color="#fff" stop-opacity=".42"/>
+      <stop offset=".09" stop-color="#f8ffff" stop-opacity=".08"/>
+      <stop offset=".50" stop-color="#d8f8fa" stop-opacity=".03"/>
+      <stop offset=".90" stop-color="#fff" stop-opacity=".08"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".56"/>
+     </linearGradient>
+     <linearGradient id="edge" x1="0" x2="1">
+      <stop stop-color="#fff" stop-opacity=".88"/>
+      <stop offset=".22" stop-color="#b8c6cb" stop-opacity=".28"/>
+      <stop offset=".74" stop-color="#fff" stop-opacity=".25"/>
+      <stop offset="1" stop-color="#fff" stop-opacity=".94"/>
+     </linearGradient>
+    </defs>
+    <path d="M89 37 Q81 37 81 58 L81 128 C81 196 135 257 169 309 C135 366 81 448 81 532 L81 568 Q81 583 103 583 L297 583 Q319 583 319 568 L319 532 C319 448 265 366 231 309 C265 257 319 196 319 128 L319 58 Q319 37 311 37Z" fill="url(#glassBody)" stroke="#ffffffc9" stroke-width="3"/>
+    <path d="M89 37 Q81 37 81 58 L81 128 C81 196 135 257 169 309 C135 366 81 448 81 532 L81 568 Q81 583 103 583 L297 583 Q319 583 319 568 L319 532 C319 448 265 366 231 309 C265 257 319 196 319 128 L319 58 Q319 37 311 37Z" fill="none" stroke="#8299a09c" stroke-width="6"/>
+    <path d="M96 62 L96 126 C96 205 144 255 182 308 M218 308 C256 255 304 205 304 126 L304 62 M182 313 C148 379 96 452 96 529 M218 313 C252 379 304 452 304 529" fill="none" stroke="#fff" stroke-opacity=".68" stroke-width="2"/>
+    <path d="M87 45 Q94 39 106 39 L294 39 Q307 40 313 47" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
+    <path d="M99 43 L301 43" stroke="#fff" stroke-opacity=".86" stroke-width="3" stroke-linecap="round"/>
+    <path d="M88 570 Q91 580 109 580 H291 Q309 580 312 570" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
+    <path d="M104 571 Q200 575 296 571" fill="none" stroke="#fff" stroke-opacity=".68" stroke-width="3"/>
+    <path d="M93 86 Q88 176 145 276" stroke="white" stroke-opacity=".36" stroke-width="5" fill="none" stroke-linecap="round"/>
+    <path d="M307 91 Q313 176 255 276" stroke="white" stroke-opacity=".43" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <path d="M149 360 Q103 440 91 504" stroke="white" stroke-opacity=".35" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <path d="M251 360 Q297 440 309 508" stroke="white" stroke-opacity=".33" stroke-width="4" fill="none" stroke-linecap="round"/>
+   </svg>
+  </div>
+  <section class="controls" aria-label="オイル描画操作">
+   <div id="clock" class="clock" aria-label="描画状態">FLOW</div>
+   <div class="actions"><button id="start" class="primary">一時停止</button><button id="reset">リセット</button></div>
+   <div id="status" class="caption" aria-live="polite">PixiJSでオイルを描画中</div>
+  </section>
  </div>
 </main>
+<script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
 <script>
 (()=>{
 'use strict';
-const DURATION=180000, svgNS='http://www.w3.org/2000/svg';
-const dropsGroup=document.getElementById('droplets'),beadsGroup=document.getElementById('beads');
-const upper=document.getElementById('upper-oil'),surface=document.getElementById('upper-surface'),pool=document.getElementById('pool');
-const pinkThread=document.getElementById('pink-thread'),tealThread=document.getElementById('teal-thread');
-const clock=document.getElementById('clock'),startButton=document.getElementById('start'),resetButton=document.getElementById('reset'),status=document.getElementById('status');
-let elapsed=0,elapsedBeforeRun=0,runStartedAt=0,running=false,lastFrame=0,raf=0,spawnAccumulator=0,dropNumber=0;
-let drops=[],beads=[];
-function el(name,attrs){const node=document.createElementNS(svgNS,name);for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);return node}
-function makeDrop(tone,side){
- const node=el('g',{}),shadow=el('ellipse',{cx:0,cy:0,rx:9,ry:13,fill:tone==='pink'?'url(#pink)':'url(#teal)'});
- const glint=el('ellipse',{cx:-3,cy:-5,rx:2.8,ry:4.2,fill:'white','fill-opacity':'.36'});
- node.append(shadow,glint);dropsGroup.append(node);
- drops.push({node,tone,age:0,duration:2300+Math.random()*900,side,offset:(Math.random()-.5)*3,radius:8+Math.random()*3});
+const stageEl=document.getElementById('pixi-stage');
+const startButton=document.getElementById('start');
+const resetButton=document.getElementById('reset');
+const status=document.getElementById('status');
+const clock=document.getElementById('clock');
+const W=400,H=620;
+let running=true,spawn=0,time=0;
+let droplets=[],beads=[];
+
+if(!window.PIXI){
+ status.textContent='PixiJSを読み込めませんでした';
+ return;
 }
-function addDropPair(){
- dropNumber++;
- makeDrop('pink',-1);
- makeDrop('teal',1);
-}
-function deposit(d){
- const x=105+Math.random()*190,y=551-Math.random()*Math.min(70,8+elapsed/DURATION*84);
- const n=el('ellipse',{cx:x,cy:y,rx:4+Math.random()*10,ry:3+Math.random()*8,fill:d.tone==='pink'?'url(#pink)':'url(#teal)',opacity:'.7'});
- beadsGroup.append(n);beads.push(n);
- if(beads.length>145){beads.shift().remove()}
-}
-function draw(){
- const p=Math.min(1,elapsed/DURATION);
- // The upper reservoir tapers gradually and drains by the end of the three minutes.
- const level=86+p*208, bottom=294-p*12;
- upper.setAttribute('d', 'M94 '+level+' Q200 '+(level-6)+' 306 '+level+' L306 '+(level+15)+' Q294 '+(level+55)+' 260 '+(level+103)+' L200 '+bottom+' L140 '+(level+103)+' Q106 '+(level+55)+' 94 '+(level+15)+'Z');
- upper.setAttribute('opacity',String(Math.max(0,1-p*1.17)));
- surface.setAttribute('d','M96 '+level+' Q148 '+(level-7)+' 200 '+level+' T304 '+level);
- surface.setAttribute('opacity',String(Math.max(0,1-p)));
- const threadOpacity=Math.max(0,Math.min(1,(1-p)*1.25));
- pinkThread.setAttribute('opacity',String(threadOpacity));
- tealThread.setAttribute('opacity',String(threadOpacity));
- pinkThread.setAttribute('d','M193 '+(bottom-8)+' C190 '+(bottom+4)+' 190 305 193 318');
- tealThread.setAttribute('d','M207 '+(bottom-8)+' C210 '+(bottom+4)+' 210 305 207 318');
- const top=556-p*110;
- pool.setAttribute('d', 'M94 '+top+' Q147 '+(top-9)+' 200 '+top+' T306 '+top+' L306 567 L94 567Z');
- pool.setAttribute('opacity',String(.3+.65*p));
- for(const d of drops){
-   const t=Math.min(1,d.age/d.duration);
-   const y=309+242*t*t;
-   const x=200+d.side*(6+8*t)+d.offset*Math.sin(t*Math.PI*2);
-   const sx=1+.1*Math.sin(t*Math.PI);
-   const sy=1+.22*Math.sin(t*Math.PI);
-   d.node.setAttribute('transform','translate('+x+' '+y+') scale('+sx+' '+sy+')');
-   d.node.setAttribute('opacity',String(Math.min(1,(1-t)*5)));
- }
- const seconds=Math.ceil((DURATION-elapsed)/1000);
- clock.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
-}
-function tick(now){
- if(!running)return;
- const delta=Math.min(80,now-lastFrame);lastFrame=now;
- elapsed=Math.min(DURATION,elapsedBeforeRun+now-runStartedAt);
- spawnAccumulator+=delta;
- while(spawnAccumulator>=1650&&elapsed<DURATION){spawnAccumulator-=1650;addDropPair()}
- for(let i=drops.length-1;i>=0;i--){
-  const d=drops[i];d.age+=delta;
-  if(d.age>=d.duration){deposit(d);d.node.remove();drops.splice(i,1)}
- }
- draw();
- if(elapsed>=DURATION){running=false;elapsedBeforeRun=DURATION;startButton.textContent='もう一度';status.textContent='3分が経過しました。';return}
- raf=requestAnimationFrame(tick);
-}
-startButton.addEventListener('click',()=>{
- if(elapsed>=DURATION){reset()}
- if(running){running=false;cancelAnimationFrame(raf);elapsedBeforeRun=elapsed;startButton.textContent='再開';status.textContent='一時停止中';return}
- running=true;runStartedAt=performance.now();lastFrame=runStartedAt;startButton.textContent='一時停止';status.textContent='オイルがゆっくり落ちています';raf=requestAnimationFrame(tick);
+
+const app=new PIXI.Application({
+ width:W,
+ height:H,
+ backgroundAlpha:0,
+ antialias:true,
+ resolution:Math.min(window.devicePixelRatio||1,2),
+ autoDensity:true
 });
-function reset(){
- running=false;cancelAnimationFrame(raf);elapsed=0;elapsedBeforeRun=0;runStartedAt=0;spawnAccumulator=0;dropNumber=0;
- drops.forEach(d=>d.node.remove());beads.forEach(n=>n.remove());drops=[];beads=[];
- startButton.textContent='スタート';status.textContent='静かな3分間を。';draw();
+stageEl.appendChild(app.view);
+app.view.style.width='100%';
+app.view.style.height='100%';
+app.view.style.position='absolute';
+app.view.style.inset='0';
+
+const maskedScene=new PIXI.Container();
+const oilLayer=new PIXI.Container();
+const beadLayer=new PIXI.Container();
+const dropLayer=new PIXI.Container();
+const reflectionLayer=new PIXI.Container();
+const maskShape=new PIXI.Graphics();
+app.stage.addChild(maskedScene,maskShape);
+maskedScene.addChild(oilLayer,beadLayer,dropLayer,reflectionLayer);
+maskedScene.mask=maskShape;
+
+try{
+ const Blur=PIXI.BlurFilter||PIXI.filters.BlurFilter;
+ beadLayer.filters=[new Blur(0.35)];
+ dropLayer.filters=[new Blur(0.25)];
+}catch(_){}
+
+const topOil=new PIXI.Graphics();
+const pool=new PIXI.Graphics();
+const nozzle=new PIXI.Graphics();
+const topHighlight=new PIXI.Graphics();
+oilLayer.addChild(topOil,pool,nozzle,topHighlight);
+
+function drawInteriorMask(){
+ maskShape.clear();
+ maskShape.beginFill(0xffffff);
+ maskShape.moveTo(101,43);
+ maskShape.quadraticCurveTo(92,45,92,62);
+ maskShape.lineTo(92,126);
+ maskShape.bezierCurveTo(92,194,138,244,179,309);
+ maskShape.bezierCurveTo(138,374,92,442,92,532);
+ maskShape.lineTo(92,558);
+ maskShape.quadraticCurveTo(92,568,108,568);
+ maskShape.lineTo(292,568);
+ maskShape.quadraticCurveTo(308,568,308,558);
+ maskShape.lineTo(308,532);
+ maskShape.bezierCurveTo(308,442,262,374,221,309);
+ maskShape.bezierCurveTo(262,244,308,194,308,126);
+ maskShape.lineTo(308,62);
+ maskShape.quadraticCurveTo(308,45,299,43);
+ maskShape.closePath();
+ maskShape.endFill();
 }
-resetButton.addEventListener('click',reset);
-draw();
+
+function oilColor(kind){
+ return kind==='pink'?0xff4eb4:0x10d5c8;
+}
+
+function drawBlob(graphics,color,alpha,rx,ry){
+ graphics.clear();
+ graphics.beginFill(color,alpha);
+ graphics.drawEllipse(0,0,rx,ry);
+ graphics.endFill();
+ graphics.beginFill(0xffffff,alpha*.38);
+ graphics.drawEllipse(-rx*.32,-ry*.38,rx*.22,ry*.22);
+ graphics.endFill();
+ graphics.lineStyle(1.5,0xffffff,alpha*.35);
+ graphics.drawEllipse(0,0,rx*.96,ry*.96);
+}
+
+function makeDrop(kind,side){
+ const g=new PIXI.Graphics();
+ const r=7+Math.random()*7;
+ drawBlob(g,oilColor(kind),.68,r,r*(1.08+Math.random()*.45));
+ g.blendMode=PIXI.BLEND_MODES.NORMAL;
+ dropLayer.addChild(g);
+ droplets.push({
+  g,kind,side,
+  x:200+side*(4+Math.random()*3),
+  y:309,
+  vx:side*(2.2+Math.random()*7),
+  vy:18+Math.random()*20,
+  wobble:Math.random()*Math.PI*2,
+  age:0,
+  life:6.8+Math.random()*1.8,
+  r
+ });
+}
+
+function makeBead(kind,x,y,r){
+ const g=new PIXI.Graphics();
+ drawBlob(g,oilColor(kind),.56+Math.random()*.12,r,r*(.58+Math.random()*.35));
+ g.rotation=(Math.random()-.5)*.7;
+ beadLayer.addChild(g);
+ beads.push({g,kind,x,y,r,phase:Math.random()*Math.PI*2});
+ if(beads.length>120){
+  const old=beads.shift();
+  old.g.destroy();
+ }
+}
+
+function deposit(drop){
+ const y=548-Math.random()*Math.min(78,12+time*.32);
+ const x=105+Math.random()*190;
+ makeBead(drop.kind,x,y,4+Math.random()*10);
+ if(Math.random()>.5)makeBead(drop.kind,x+drop.side*(6+Math.random()*11),y+Math.random()*12,2.5+Math.random()*5);
+}
+
+function drawStaticOil(){
+ const p=(Math.sin(time*.04)+1)*.5;
+ topOil.clear();
+ topOil.beginFill(0xff40ad,.56);
+ topOil.moveTo(94,87);
+ topOil.bezierCurveTo(128,82+p*3,160,82,200,88);
+ topOil.lineTo(200,294);
+ topOil.lineTo(138,205);
+ topOil.bezierCurveTo(112,165,98,127,94,87);
+ topOil.endFill();
+ topOil.beginFill(0x13cfc7,.58);
+ topOil.moveTo(200,88);
+ topOil.bezierCurveTo(240,84,276,84-p*3,306,87);
+ topOil.bezierCurveTo(302,128,288,165,262,205);
+ topOil.lineTo(200,294);
+ topOil.closePath();
+ topOil.endFill();
+ topOil.beginFill(0xffffff,.18);
+ topOil.drawEllipse(200,114,86,12);
+ topOil.endFill();
+
+ topHighlight.clear();
+ topHighlight.lineStyle(3,0xffffff,.46);
+ topHighlight.moveTo(98,87);
+ topHighlight.bezierCurveTo(146,79,194,90,200,88);
+ topHighlight.bezierCurveTo(248,80,282,83,304,87);
+ topHighlight.lineStyle(2,0xffd9ef,.3);
+ topHighlight.moveTo(112,172);
+ topHighlight.bezierCurveTo(146,184,167,222,197,285);
+
+ nozzle.clear();
+ nozzle.lineStyle(4,0xff55b7,.62);
+ nozzle.moveTo(194,286);
+ nozzle.bezierCurveTo(190,298,190,306,194,321);
+ nozzle.lineStyle(4,0x12d7ca,.62);
+ nozzle.moveTo(206,286);
+ nozzle.bezierCurveTo(210,298,210,306,206,321);
+ nozzle.beginFill(0xffffff,.18);
+ nozzle.drawEllipse(200,313,18,8);
+ nozzle.endFill();
+
+ pool.clear();
+ const poolTop=552-Math.min(78,16+time*.12);
+ pool.beginFill(0x18c8c4,.36);
+ pool.moveTo(94,poolTop+6);
+ pool.bezierCurveTo(142,poolTop-7,173,poolTop+10,200,poolTop+1);
+ pool.bezierCurveTo(231,poolTop-7,272,poolTop-2,306,poolTop+7);
+ pool.lineTo(306,568);
+ pool.lineTo(94,568);
+ pool.closePath();
+ pool.endFill();
+ pool.beginFill(0xff4eb4,.28);
+ pool.drawEllipse(153,poolTop+18,64,13);
+ pool.endFill();
+ pool.beginFill(0x0b7cc9,.28);
+ pool.drawEllipse(248,poolTop+20,64,14);
+ pool.endFill();
+}
+
+function drawReflections(){
+ reflectionLayer.removeChildren();
+ const left=new PIXI.Graphics();
+ left.lineStyle(5,0xffffff,.16);
+ left.moveTo(105,83);
+ left.bezierCurveTo(99,178,144,247,180,306);
+ left.bezierCurveTo(151,374,105,446,97,512);
+ reflectionLayer.addChild(left);
+ const right=new PIXI.Graphics();
+ right.lineStyle(3,0xffffff,.18);
+ right.moveTo(296,92);
+ right.bezierCurveTo(305,176,257,251,220,306);
+ right.bezierCurveTo(253,374,298,448,307,512);
+ reflectionLayer.addChild(right);
+}
+
+function resetOil(){
+ droplets.forEach(d=>d.g.destroy());
+ beads.forEach(b=>b.g.destroy());
+ droplets=[];
+ beads=[];
+ spawn=0;
+ time=0;
+ for(let i=0;i<28;i++){
+  const kind=i%2?'teal':'pink';
+  makeBead(kind,108+Math.random()*184,545+Math.random()*18,2.5+Math.random()*6);
+ }
+}
+
+function update(delta){
+ if(!running)return;
+ const dt=Math.min(delta/60,0.045);
+ time+=dt*60;
+ spawn+=dt;
+ while(spawn>.34){
+  spawn-=.34;
+  makeDrop('pink',-1);
+  makeDrop('teal',1);
+ }
+ drawStaticOil();
+ droplets=filterAliveDrops(dt);
+ beads.forEach((b)=>{
+  b.phase+=dt*2;
+  b.g.x=b.x+Math.sin(b.phase)*.7;
+  b.g.y=b.y+Math.cos(b.phase*.7)*.35;
+ });
+ clock.textContent='FLOW';
+}
+
+function filterAliveDrops(dt){
+ const alive=[];
+ droplets.forEach((d)=>{
+  d.age+=dt;
+  d.vy+=42*dt;
+  d.x+=d.vx*dt+Math.sin(d.age*5+d.wobble)*.35;
+  d.y+=d.vy*dt;
+  d.g.x=d.x;
+  d.g.y=d.y;
+  d.g.rotation=Math.sin(d.age*4+d.wobble)*.16;
+  d.g.scale.set(1+Math.sin(d.age*5)*.08,1+Math.cos(d.age*4)*.12);
+  d.g.alpha=Math.min(1,(d.life-d.age)*2.2);
+  if(d.y>535||d.age>d.life){
+   deposit(d);
+   d.g.destroy();
+  }else{
+   alive.push(d);
+  }
+ });
+ return alive;
+}
+
+drawInteriorMask();
+drawReflections();
+resetOil();
+app.ticker.add(update);
+
+startButton.addEventListener('click',()=>{
+ running=!running;
+ startButton.textContent=running?'一時停止':'再開';
+ status.textContent=running?'PixiJSでオイルを描画中':'一時停止中';
+});
+resetButton.addEventListener('click',()=>{
+ resetOil();
+ status.textContent='描画をリセットしました';
+ if(!running){
+  running=true;
+  startButton.textContent='一時停止';
+ }
+});
 })();
 </script>
 </body>
