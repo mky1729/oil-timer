@@ -58,6 +58,16 @@ button.primary:hover{background:#375955}
       <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="soft"/>
       <feColorMatrix in="soft" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
      </filter>
+     <!-- Shade the inner silhouette after fusion, so merged droplets have no seams. -->
+     <filter id="oil-inner-edge" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
+      <feMorphology in="SourceAlpha" operator="erode" radius="1.2" result="inset"/>
+      <feGaussianBlur in="inset" stdDeviation=".65" result="softInset"/>
+      <feOffset in="softInset" dx="-.45" dy="-.8" result="shiftedInset"/>
+      <feComposite in="SourceAlpha" in2="shiftedInset" operator="out" result="innerRim"/>
+      <feFlood flood-color="#173044" flood-opacity=".34" result="shade"/>
+      <feComposite in="shade" in2="innerRim" operator="in" result="rimShade"/>
+      <feComposite in="rimShade" in2="SourceGraphic" operator="atop"/>
+     </filter>
      <clipPath id="liquid-interior"><rect x="92" y="49" width="216" height="519" rx="15"/></clipPath>
      <linearGradient id="join-zones" x1="0" y1="0" x2="0" y2="1">
       <stop offset="0" stop-color="white"/><stop offset=".355" stop-color="white"/>
@@ -77,12 +87,12 @@ button.primary:hover{background:#375955}
      </mask>
     </defs>
     <g clip-path="url(#liquid-interior)">
-     <g id="oil-pink" opacity=".58" fill="#ff00d8" style="mix-blend-mode:multiply">
+     <g id="oil-pink" filter="url(#oil-inner-edge)" opacity=".58" fill="#ff00d8" style="mix-blend-mode:multiply">
       <g mask="url(#join-mask)"><g id="join-pink" filter="url(#liquid-fuse)"></g></g>
       <g id="free-pink" mask="url(#free-mask)"></g>
       <g id="rest-pink"></g>
      </g>
-     <g id="oil-teal" opacity=".72" fill="#00c4ff" style="mix-blend-mode:multiply">
+     <g id="oil-teal" filter="url(#oil-inner-edge)" opacity=".72" fill="#00c4ff" style="mix-blend-mode:multiply">
       <g mask="url(#join-mask)"><g id="join-teal" filter="url(#liquid-fuse)"></g></g>
       <g id="free-teal" mask="url(#free-mask)"></g>
       <g id="rest-teal"></g>
@@ -277,7 +287,7 @@ function drawBlob(graphics,color,alpha,rx,ry){
  graphics.beginFill(color,alpha);
  graphics.drawEllipse(0,0,rx,ry);
  graphics.endFill();
- graphics.lineStyle(.7,color,alpha*.24);
+ graphics.lineStyle(1.1,0x173044,alpha*.22);
  graphics.drawEllipse(0,0,rx,ry);
 }
 
