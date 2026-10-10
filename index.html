@@ -67,23 +67,19 @@ button.primary:hover{background:#375955}
       <stop offset="1" stop-color="#fff" stop-opacity=".94"/>
      </linearGradient>
     </defs>
-    <path d="M89 37 Q81 37 81 58 L81 128 C81 196 135 257 169 309 C135 366 81 448 81 532 L81 568 Q81 583 103 583 L297 583 Q319 583 319 568 L319 532 C319 448 265 366 231 309 C265 257 319 196 319 128 L319 58 Q319 37 311 37Z" fill="url(#glassBody)" stroke="#ffffffc9" stroke-width="3"/>
-    <path d="M89 37 Q81 37 81 58 L81 128 C81 196 135 257 169 309 C135 366 81 448 81 532 L81 568 Q81 583 103 583 L297 583 Q319 583 319 568 L319 532 C319 448 265 366 231 309 C265 257 319 196 319 128 L319 58 Q319 37 311 37Z" fill="none" stroke="#8299a09c" stroke-width="6"/>
-    <path d="M96 62 L96 126 C96 205 144 255 182 308 M218 308 C256 255 304 205 304 126 L304 62 M182 313 C148 379 96 452 96 529 M218 313 C252 379 304 452 304 529" fill="none" stroke="#fff" stroke-opacity=".68" stroke-width="2"/>
-    <path d="M87 45 Q94 39 106 39 L294 39 Q307 40 313 47" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
-    <path d="M99 43 L301 43" stroke="#fff" stroke-opacity=".86" stroke-width="3" stroke-linecap="round"/>
-    <path d="M88 570 Q91 580 109 580 H291 Q309 580 312 570" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
-    <path d="M104 571 Q200 575 296 571" fill="none" stroke="#fff" stroke-opacity=".68" stroke-width="3"/>
-    <path d="M93 86 Q88 176 145 276" stroke="white" stroke-opacity=".36" stroke-width="5" fill="none" stroke-linecap="round"/>
-    <path d="M307 91 Q313 176 255 276" stroke="white" stroke-opacity=".43" stroke-width="3" fill="none" stroke-linecap="round"/>
-    <path d="M149 360 Q103 440 91 504" stroke="white" stroke-opacity=".35" stroke-width="4" fill="none" stroke-linecap="round"/>
-    <path d="M251 360 Q297 440 309 508" stroke="white" stroke-opacity=".33" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <rect x="81" y="37" width="238" height="546" rx="24" fill="url(#glassBody)" stroke="#8299a070" stroke-width="3"/>
+    <rect x="86" y="41" width="228" height="537" rx="20" fill="none" stroke="#ffffffaa" stroke-width="2"/>
+    <ellipse cx="200" cy="43" rx="109" ry="9" fill="#ffffff18" stroke="url(#edge)" stroke-width="5"/>
+    <ellipse cx="200" cy="573" rx="109" ry="9" fill="#ffffff18" stroke="url(#edge)" stroke-width="5"/>
+    <path d="M96 67 V547 M304 67 V547" fill="none" stroke="#ffffff80" stroke-width="3" stroke-linecap="round"/>
+    <path d="M103 82 V528" fill="none" stroke="#ffffff30" stroke-width="7" stroke-linecap="round"/>
+    <path d="M294 78 V532" fill="none" stroke="#ffffff36" stroke-width="4" stroke-linecap="round"/>
    </svg>
   </div>
   <section class="controls" aria-label="オイル描画操作">
    <div id="clock" class="clock" aria-label="描画状態">FLOW</div>
    <div class="actions"><button id="start" class="primary">一時停止</button><button id="reset">リセット</button></div>
-   <div id="status" class="caption" aria-live="polite">PixiJSでオイルを描画中</div>
+   <div id="status" class="caption" aria-live="polite">ふたつの色がゆっくり重なります</div>
   </section>
  </div>
 </main>
@@ -97,7 +93,7 @@ const resetButton=document.getElementById('reset');
 const status=document.getElementById('status');
 const clock=document.getElementById('clock');
 const W=400,H=620;
-let running=true,spawn=0,time=0;
+let running=true,spawn=0,time=0,nextPink=true;
 let droplets=[],beads=[];
 
 if(!window.PIXI){
@@ -129,12 +125,6 @@ app.stage.addChild(maskedScene,maskShape);
 maskedScene.addChild(oilLayer,beadLayer,dropLayer,reflectionLayer);
 maskedScene.mask=maskShape;
 
-try{
- const Blur=PIXI.BlurFilter||PIXI.filters.BlurFilter;
- beadLayer.filters=[new Blur(0.35)];
- dropLayer.filters=[new Blur(0.25)];
-}catch(_){}
-
 const topOil=new PIXI.Graphics();
 const pool=new PIXI.Graphics();
 const nozzle=new PIXI.Graphics();
@@ -142,59 +132,33 @@ const topHighlight=new PIXI.Graphics();
 oilLayer.addChild(topOil,pool,nozzle,topHighlight);
 
 function drawInteriorMask(){
- maskShape.clear();
- maskShape.beginFill(0xffffff);
- maskShape.moveTo(101,43);
- maskShape.quadraticCurveTo(92,45,92,62);
- maskShape.lineTo(92,126);
- maskShape.bezierCurveTo(92,194,138,244,179,309);
- maskShape.bezierCurveTo(138,374,92,442,92,532);
- maskShape.lineTo(92,558);
- maskShape.quadraticCurveTo(92,568,108,568);
- maskShape.lineTo(292,568);
- maskShape.quadraticCurveTo(308,568,308,558);
- maskShape.lineTo(308,532);
- maskShape.bezierCurveTo(308,442,262,374,221,309);
- maskShape.bezierCurveTo(262,244,308,194,308,126);
- maskShape.lineTo(308,62);
- maskShape.quadraticCurveTo(308,45,299,43);
- maskShape.closePath();
- maskShape.endFill();
+ maskShape.clear().beginFill(0xffffff).drawRoundedRect(92,49,216,519,15).endFill();
 }
 
 function oilColor(kind){
  return kind==='pink'?0xff4eb4:0x10d5c8;
 }
 
+// Flat, translucent lenses: source-over compositing preserves both colors at overlaps.
 function drawBlob(graphics,color,alpha,rx,ry){
  graphics.clear();
  graphics.beginFill(color,alpha);
  graphics.drawEllipse(0,0,rx,ry);
  graphics.endFill();
- graphics.beginFill(0xffffff,alpha*.38);
- graphics.drawEllipse(-rx*.32,-ry*.38,rx*.22,ry*.22);
- graphics.endFill();
- graphics.lineStyle(1.5,0xffffff,alpha*.35);
- graphics.drawEllipse(0,0,rx*.96,ry*.96);
+ graphics.lineStyle(.7,color,alpha*.24);
+ graphics.drawEllipse(0,0,rx,ry);
 }
 
 function makeDrop(kind,side){
  const g=new PIXI.Graphics();
- const r=7+Math.random()*7;
- drawBlob(g,oilColor(kind),.68,r,r*(1.08+Math.random()*.45));
+ const r=19+Math.random()*6;
+ drawBlob(g,oilColor(kind),.48,r,r*(.86+Math.random()*.22));
  g.blendMode=PIXI.BLEND_MODES.NORMAL;
  dropLayer.addChild(g);
- droplets.push({
-  g,kind,side,
-  x:200+side*(4+Math.random()*3),
-  y:309,
-  vx:side*(2.2+Math.random()*7),
-  vy:18+Math.random()*20,
-  wobble:Math.random()*Math.PI*2,
-  age:0,
-  life:6.8+Math.random()*1.8,
-  r
- });
+ droplets.push({g,kind,side,x:200+side*4,y:198,
+  vy:13+Math.random()*4,wobble:Math.random()*Math.PI*2,
+  age:0,r,spread:24+Math.random()*22});
+ g.position.set(200+side*4,198);
 }
 
 function makeBead(kind,x,y,r){
@@ -210,85 +174,42 @@ function makeBead(kind,x,y,r){
 }
 
 function deposit(drop){
- const y=548-Math.random()*Math.min(78,12+time*.32);
- const x=105+Math.random()*190;
- makeBead(drop.kind,x,y,4+Math.random()*10);
- if(Math.random()>.5)makeBead(drop.kind,x+drop.side*(6+Math.random()*11),y+Math.random()*12,2.5+Math.random()*5);
+ const y=548-Math.random()*26;
+ const x=Math.max(116,Math.min(284,drop.x));
+ makeBead(drop.kind,x,y,drop.r*(.72+Math.random()*.16));
 }
 
 function drawStaticOil(){
- const p=(Math.sin(time*.04)+1)*.5;
+ const wave=Math.sin(time*.25)*2;
  topOil.clear();
- topOil.beginFill(0xff40ad,.56);
- topOil.moveTo(94,87);
- topOil.bezierCurveTo(128,82+p*3,160,82,200,88);
- topOil.lineTo(200,294);
- topOil.lineTo(138,205);
- topOil.bezierCurveTo(112,165,98,127,94,87);
- topOil.endFill();
- topOil.beginFill(0x13cfc7,.58);
- topOil.moveTo(200,88);
- topOil.bezierCurveTo(240,84,276,84-p*3,306,87);
- topOil.bezierCurveTo(302,128,288,165,262,205);
- topOil.lineTo(200,294);
- topOil.closePath();
- topOil.endFill();
- topOil.beginFill(0xffffff,.18);
- topOil.drawEllipse(200,114,86,12);
- topOil.endFill();
-
+ // Two shallow reservoirs taper internally into the same central outlet.
+ for(const [color,offset] of [[0xff40ad,-3],[0x13cfc7,3]]){
+  topOil.beginFill(color,.43);
+  topOil.moveTo(94,94+offset);
+  topOil.bezierCurveTo(150,91+wave+offset,250,98-wave+offset,306,94+offset);
+  topOil.lineTo(306,145+offset);
+  topOil.bezierCurveTo(284,163,238,175,200+offset,189);
+  topOil.bezierCurveTo(162,175,116,163,94,145+offset);
+  topOil.closePath();topOil.endFill();
+ }
  topHighlight.clear();
- topHighlight.lineStyle(3,0xffffff,.46);
- topHighlight.moveTo(98,87);
- topHighlight.bezierCurveTo(146,79,194,90,200,88);
- topHighlight.bezierCurveTo(248,80,282,83,304,87);
- topHighlight.lineStyle(2,0xffd9ef,.3);
- topHighlight.moveTo(112,172);
- topHighlight.bezierCurveTo(146,184,167,222,197,285);
-
+ topHighlight.lineStyle(1,0xffffff,.28);
+ topHighlight.moveTo(96,94);topHighlight.bezierCurveTo(154,90+wave,249,98-wave,304,94);
  nozzle.clear();
- nozzle.lineStyle(4,0xff55b7,.62);
- nozzle.moveTo(194,286);
- nozzle.bezierCurveTo(190,298,190,306,194,321);
- nozzle.lineStyle(4,0x12d7ca,.62);
- nozzle.moveTo(206,286);
- nozzle.bezierCurveTo(210,298,210,306,206,321);
- nozzle.beginFill(0xffffff,.18);
- nozzle.drawEllipse(200,313,18,8);
- nozzle.endFill();
-
+ for(const [color,x] of [[0xff55b7,197],[0x12d7ca,203]]){
+  nozzle.beginFill(color,.46);nozzle.drawEllipse(x,190,5,12);nozzle.endFill();
+ }
  pool.clear();
- const poolTop=552-Math.min(78,16+time*.12);
- pool.beginFill(0x18c8c4,.36);
- pool.moveTo(94,poolTop+6);
- pool.bezierCurveTo(142,poolTop-7,173,poolTop+10,200,poolTop+1);
- pool.bezierCurveTo(231,poolTop-7,272,poolTop-2,306,poolTop+7);
- pool.lineTo(306,568);
- pool.lineTo(94,568);
- pool.closePath();
- pool.endFill();
- pool.beginFill(0xff4eb4,.28);
- pool.drawEllipse(153,poolTop+18,64,13);
- pool.endFill();
- pool.beginFill(0x0b7cc9,.28);
- pool.drawEllipse(248,poolTop+20,64,14);
- pool.endFill();
+ for(const [color,x] of [[0xff4eb4,171],[0x13cfc7,229]]){
+  pool.beginFill(color,.24);pool.drawEllipse(x,557,77,15);pool.endFill();
+ }
 }
 
 function drawReflections(){
- reflectionLayer.removeChildren();
- const left=new PIXI.Graphics();
- left.lineStyle(5,0xffffff,.16);
- left.moveTo(105,83);
- left.bezierCurveTo(99,178,144,247,180,306);
- left.bezierCurveTo(151,374,105,446,97,512);
- reflectionLayer.addChild(left);
- const right=new PIXI.Graphics();
- right.lineStyle(3,0xffffff,.18);
- right.moveTo(296,92);
- right.bezierCurveTo(305,176,257,251,220,306);
- right.bezierCurveTo(253,374,298,448,307,512);
- reflectionLayer.addChild(right);
+ const reflection=new PIXI.Graphics();
+ reflection.lineStyle(3,0xffffff,.09);
+ reflection.moveTo(101,74);reflection.lineTo(101,549);
+ reflectionLayer.addChild(reflection);
 }
 
 function resetOil(){
@@ -298,21 +219,31 @@ function resetOil(){
  beads=[];
  spawn=0;
  time=0;
- for(let i=0;i<28;i++){
+ nextPink=true;
+ for(let i=0;i<16;i++){
   const kind=i%2?'teal':'pink';
-  makeBead(kind,108+Math.random()*184,545+Math.random()*18,2.5+Math.random()*6);
+  makeBead(kind,116+Math.random()*168,548+Math.random()*12,8+Math.random()*10);
+ }
+ drawStaticOil();
+ for(let i=0;i<8;i++){
+  makeDrop(i%2?'teal':'pink',i%2?1:-1);
+  const d=droplets[droplets.length-1];
+  d.age=2+i*2.5;d.y=198+d.age*d.vy;
+  d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
+  d.g.position.set(d.x,d.y);
  }
 }
 
 function update(delta){
  if(!running)return;
  const dt=Math.min(delta/60,0.045);
- time+=dt*60;
+ time+=dt;
  spawn+=dt;
- while(spawn>.34){
-  spawn-=.34;
-  makeDrop('pink',-1);
-  makeDrop('teal',1);
+ while(spawn>1.6){
+  spawn-=1.6;
+  const kind=nextPink?'pink':'teal';
+  makeDrop(kind,nextPink?-1:1);
+  nextPink=!nextPink;
  }
  drawStaticOil();
  droplets=filterAliveDrops(dt);
@@ -326,22 +257,14 @@ function update(delta){
 
 function filterAliveDrops(dt){
  const alive=[];
- droplets.forEach((d)=>{
+ droplets.forEach(d=>{
   d.age+=dt;
-  d.vy+=42*dt;
-  d.x+=d.vx*dt+Math.sin(d.age*5+d.wobble)*.35;
   d.y+=d.vy*dt;
-  d.g.x=d.x;
-  d.g.y=d.y;
-  d.g.rotation=Math.sin(d.age*4+d.wobble)*.16;
-  d.g.scale.set(1+Math.sin(d.age*5)*.08,1+Math.cos(d.age*4)*.12);
-  d.g.alpha=Math.min(1,(d.life-d.age)*2.2);
-  if(d.y>535||d.age>d.life){
-   deposit(d);
-   d.g.destroy();
-  }else{
-   alive.push(d);
-  }
+  d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
+  d.g.position.set(d.x,d.y);
+  d.g.rotation=Math.sin(d.age*.45+d.wobble)*.12;
+  d.g.scale.set(1+Math.sin(d.age*.65)*.05,1+Math.cos(d.age*.55)*.04);
+  if(d.y>=536){deposit(d);d.g.destroy();}else{alive.push(d);}
  });
  return alive;
 }
@@ -354,7 +277,7 @@ app.ticker.add(update);
 startButton.addEventListener('click',()=>{
  running=!running;
  startButton.textContent=running?'一時停止':'再開';
- status.textContent=running?'PixiJSでオイルを描画中':'一時停止中';
+ status.textContent=running?'ふたつの色がゆっくり重なります':'一時停止中';
 });
 resetButton.addEventListener('click',()=>{
  resetOil();
