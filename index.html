@@ -33,6 +33,7 @@ button:hover{background:#fff;transform:translateY(-1px)}
 button:focus-visible{outline:3px solid #008c94;outline-offset:3px}
 button.primary{background:#526b68;color:white;border-color:#526b68}
 button.primary:hover{background:#375955}
+.palette{display:flex;align-items:center;gap:9px;font-size:11px;color:#4e5557}.palette select{font:inherit;color:inherit;background:#ffffffc9;border:1px solid #ffffffaa;border-radius:16px;padding:8px 12px}.palette select:focus-visible{outline:3px solid #008c94;outline-offset:3px}
 .caption{font-size:11px;letter-spacing:.12em;color:#74807e;text-shadow:0 1px 8px #fff}
 @media(max-height:780px){.app{justify-content:flex-start}.timer-stage{width:min(262px,58vh);margin-top:-4px;margin-bottom:14px}.header h1{font-size:31px}.subtitle{margin-top:4px}.clock{font-size:30px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
@@ -49,7 +50,7 @@ button.primary:hover{background:#375955}
    <h1>Oil Timer</h1>
    <p class="subtitle">ふたつの色が、ゆっくり落ちる。</p>
   </header>
-  <div class="timer-stage" aria-label="透明容器の中央からピンクと青緑のオイルが落ちるアニメーション">
+  <div class="timer-stage" aria-label="透明容器の中央から2色のオイルが落ちるアニメーション">
    <div id="pixi-stage"></div>
    <svg id="liquid-joins" style="mix-blend-mode:multiply" class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
     <defs>
@@ -76,13 +77,15 @@ button.primary:hover{background:#375955}
      </mask>
     </defs>
     <g clip-path="url(#liquid-interior)">
-     <g opacity=".58" fill="#ff00d8" style="mix-blend-mode:multiply">
+     <g id="oil-pink" opacity=".58" fill="#ff00d8" style="mix-blend-mode:multiply">
       <g mask="url(#join-mask)"><g id="join-pink" filter="url(#liquid-fuse)"></g></g>
       <g id="free-pink" mask="url(#free-mask)"></g>
+      <g id="rest-pink"></g>
      </g>
-     <g opacity=".72" fill="#00c4ff" style="mix-blend-mode:multiply">
+     <g id="oil-teal" opacity=".72" fill="#00c4ff" style="mix-blend-mode:multiply">
       <g mask="url(#join-mask)"><g id="join-teal" filter="url(#liquid-fuse)"></g></g>
       <g id="free-teal" mask="url(#free-mask)"></g>
+      <g id="rest-teal"></g>
      </g>
     </g>
    </svg>
@@ -114,6 +117,14 @@ button.primary:hover{background:#375955}
   <section class="controls" aria-label="オイル描画操作">
    <div id="clock" class="clock" aria-label="描画状態">FLOW</div>
    <div class="actions"><button id="start" class="primary">一時停止</button><button id="reset">リセット</button></div>
+   <label class="palette" for="palette">オイルの色
+    <select id="palette">
+     <option value="pink-cyan">ピンク × 水色</option>
+     <option value="lime-cyan">黄緑 × 水色</option>
+     <option value="pink-yellow">ピンク × 黄色</option>
+     <option value="pink-lime">ピンク × 黄緑</option>
+    </select>
+   </label>
    <div id="status" class="caption" aria-live="polite">ふたつの色がゆっくり重なります</div>
   </section>
  </div>
@@ -147,6 +158,13 @@ const resetButton=document.getElementById('reset');
 const status=document.getElementById('status');
 const clock=document.getElementById('clock');
 const W=400,H=620;
+const palettes={
+ 'pink-cyan':{pink:[0xff00d8,.58],teal:[0x00c4ff,.72]},
+ 'lime-cyan':{pink:[0x72ef00,.68],teal:[0x00c4ff,.72]},
+ 'pink-yellow':{pink:[0xff00d8,.58],teal:[0xffdc00,.76]},
+ 'pink-lime':{pink:[0xff00d8,.58],teal:[0x72ef00,.68]}
+};
+let palette=palettes['pink-cyan'];
 let running=true,spawn=0,time=0,nextPink=true;
 let droplets=[],beads=[];
 
@@ -189,6 +207,7 @@ const svgNS='http://www.w3.org/2000/svg';
 const joinGroups={pink:document.getElementById('join-pink'),teal:document.getElementById('join-teal')};
 const reservoirNodes={};
 const freeGroups={pink:document.getElementById('free-pink'),teal:document.getElementById('free-teal')};
+const restGroups={pink:document.getElementById('rest-pink'),teal:document.getElementById('rest-teal')};
 let joinsEnabled=typeof window.SVGFEGaussianBlurElement!=='undefined';
 function ellipseNode(parent,x,y,rx,ry){
  const node=document.createElementNS(svgNS,'ellipse');
@@ -202,7 +221,7 @@ function resetJoins(){
  if(!joinsEnabled)return;
  for(const kind of ['pink','teal']){
   const group=joinGroups[kind];group.replaceChildren();
-  freeGroups[kind].replaceChildren();
+  freeGroups[kind].replaceChildren();restGroups[kind].replaceChildren();
   // Fuse the actual reservoir with the forming drop; no permanent nozzle shape.
   const reservoir=document.createElementNS(svgNS,'path');
   group.appendChild(reservoir);reservoirNodes[kind]=reservoir;
@@ -228,7 +247,10 @@ function updateJoins(){
   }
   for(const b of beads){
    b.g.alpha=0;
-   if(!b.joinNode)b.joinNode=ellipseNode(joinGroups[b.kind],b.x,b.y,b.r,b.ry);
+   const parent=b.age<b.delay?restGroups[b.kind]:joinGroups[b.kind];
+   if(!b.joinNode)b.joinNode=ellipseNode(parent,b.x,b.y,b.r,b.ry);
+   else if(b.joinNode.parentNode!==parent)parent.appendChild(b.joinNode);
+   b.joinNode.setAttribute('rx',b.r);b.joinNode.setAttribute('ry',b.ry);
    b.joinNode.setAttribute('cx',b.g.x);b.joinNode.setAttribute('cy',b.g.y);
   }
  }catch(error){
@@ -244,8 +266,10 @@ function drawInteriorMask(){
 }
 
 function oilColor(kind){
- return kind==='pink'?0xff00d8:0x00c4ff;
+ return palette[kind][0];
 }
+
+function oilOpacity(kind){return palette[kind][1];}
 
 // Flat, translucent lenses: source-over compositing preserves both colors at overlaps.
 function drawBlob(graphics,color,alpha,rx,ry){
@@ -261,7 +285,7 @@ function makeDrop(kind,side){
  const g=new PIXI.Graphics();
  const r=19+Math.random()*6;
  const ry=r*(.86+Math.random()*.22);
- drawBlob(g,oilColor(kind),kind==='pink'?.58:.72,r,ry);
+ drawBlob(g,oilColor(kind),oilOpacity(kind),r,ry);
  g.blendMode=PIXI.BLEND_MODES.NORMAL;
  dropLayer.addChild(g);
  droplets.push({g,kind,side,x:200+side*4,y:184,
@@ -271,14 +295,14 @@ function makeDrop(kind,side){
  g.scale.set(.4);
 }
 
-function makeBead(kind,x,y,r){
+function makeBead(kind,x,y,r,settling=false){
  const g=new PIXI.Graphics();
- const ry=r*(.58+Math.random()*.35);
- drawBlob(g,oilColor(kind),kind==='pink'?.58:.72,r,ry);
+ const ry=r*(settling?.86:.58+Math.random()*.35);
+ drawBlob(g,oilColor(kind),oilOpacity(kind),r,ry);
  g.rotation=(Math.random()-.5)*.7;
  beadLayer.addChild(g);
  g.position.set(x,y);
- beads.push({g,kind,x,y,r,ry,phase:Math.random()*Math.PI*2});
+ beads.push({g,kind,x,y,r,ry,initialY:y,initialRY:ry,age:0,delay:settling?2+Math.random()*2:0,settling,phase:Math.random()*Math.PI*2});
  if(beads.length>120){
   const old=beads.shift();
   if(old.joinNode)old.joinNode.remove();
@@ -287,9 +311,9 @@ function makeBead(kind,x,y,r){
 }
 
 function deposit(drop){
- const y=544+Math.random()*7;
+ const y=530+Math.random()*5;
  const x=Math.max(116,Math.min(284,drop.x));
- makeBead(drop.kind,x,y,drop.r*(.72+Math.random()*.16));
+ makeBead(drop.kind,x,y,drop.r*(.52+Math.random()*.1),true);
 }
 
 function drawStaticOil(){
@@ -297,8 +321,9 @@ function drawStaticOil(){
  topOil.visible=!joinsEnabled;
  topOil.clear();
  // Two shallow reservoirs taper internally into the same central outlet.
- for(const [color,offset] of [[0xff00d8,-3],[0x00c4ff,3]]){
-  topOil.beginFill(color,offset<0?.58:.72);
+ for(const kind of ['pink','teal']){
+  const color=oilColor(kind),offset=kind==='pink'?-3:3;
+  topOil.beginFill(color,oilOpacity(kind));
   topOil.moveTo(94,94+offset);
   topOil.bezierCurveTo(150,91+wave+offset,250,98-wave+offset,306,94+offset);
   topOil.lineTo(306,145+offset);
@@ -315,8 +340,9 @@ function drawStaticOil(){
  topHighlight.moveTo(96,94);topHighlight.bezierCurveTo(154,90+wave,249,98-wave,304,94);
  pool.visible=!joinsEnabled;
  pool.clear();
- for(const [color,x] of [[0xff00d8,171],[0x00c4ff,229]]){
-  pool.beginFill(color,x<200?.58:.72);pool.drawEllipse(x,557,77,15);pool.endFill();
+ for(const kind of ['pink','teal']){
+  const color=oilColor(kind),x=kind==='pink'?171:229;
+  pool.beginFill(color,oilOpacity(kind));pool.drawEllipse(x,557,77,15);pool.endFill();
  }
 }
 
@@ -366,6 +392,13 @@ function update(delta){
  drawStaticOil();
  droplets=filterAliveDrops(dt);
  beads.forEach((b)=>{
+  b.age+=dt;
+  if(b.settling){
+   const merge=Math.max(0,Math.min(1,(b.age-b.delay)/1.8));
+   b.y=b.initialY+(550-b.initialY)*merge;
+   b.ry=b.initialRY*(1-.35*merge);
+   drawBlob(b.g,oilColor(b.kind),oilOpacity(b.kind),b.r,b.ry);
+  }
   b.phase+=dt*2;
   b.g.x=b.x+Math.sin(b.phase)*.7;
   b.g.y=b.y+Math.cos(b.phase*.7)*.35;
@@ -387,7 +420,7 @@ function filterAliveDrops(dt){
   d.sx=growth*(1+Math.sin(d.age*.65)*.05+flatten*.2);
   d.sy=growth*(1+Math.cos(d.age*.55)*.04-flatten*.22);
   d.g.scale.set(d.sx,d.sy);
-  if(d.y>=536){deposit(d);if(d.joinNode)d.joinNode.remove();if(d.freeNode)d.freeNode.remove();d.g.destroy();}else{alive.push(d);}
+  if(d.y>=528){deposit(d);if(d.joinNode)d.joinNode.remove();if(d.freeNode)d.freeNode.remove();d.g.destroy();}else{alive.push(d);}
  });
  return alive;
 }
@@ -401,6 +434,17 @@ startButton.addEventListener('click',()=>{
  running=!running;
  startButton.textContent=running?'一時停止':'再開';
  status.textContent=running?'ふたつの色がゆっくり重なります':'一時停止中';
+});
+document.getElementById('palette').addEventListener('change',event=>{
+ palette=palettes[event.target.value]||palettes['pink-cyan'];
+ for(const kind of ['pink','teal']){
+  const group=document.getElementById('oil-'+kind);
+  group.setAttribute('fill','#'+oilColor(kind).toString(16).padStart(6,'0'));
+  group.setAttribute('opacity',oilOpacity(kind));
+ }
+ droplets.forEach(d=>drawBlob(d.g,oilColor(d.kind),oilOpacity(d.kind),d.r,d.ry));
+ beads.forEach(b=>drawBlob(b.g,oilColor(b.kind),oilOpacity(b.kind),b.r,b.ry));
+ drawStaticOil();updateJoins();
 });
 resetButton.addEventListener('click',()=>{
  resetOil();
