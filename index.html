@@ -116,20 +116,60 @@ app.view.style.position='absolute';
 app.view.style.inset='0';
 
 const maskedScene=new PIXI.Container();
-const oilLayer=new PIXI.Container();
-const beadLayer=new PIXI.Container();
-const dropLayer=new PIXI.Container();
 const reflectionLayer=new PIXI.Container();
 const maskShape=new PIXI.Graphics();
 app.stage.addChild(maskedScene,maskShape);
-maskedScene.addChild(oilLayer,beadLayer,dropLayer,reflectionLayer);
+maskedScene.addChild(reflectionLayer);
 maskedScene.mask=maskShape;
 
-const topOil=new PIXI.Graphics();
-const pool=new PIXI.Graphics();
-const nozzle=new PIXI.Graphics();
+// Blur + alpha contrast, applied per color so the transparent room is untouched.
+// In the middle of the vessel, use the original crisp translucent silhouette.
+const liquidFragment=`
+precision mediump float;
+varying vec2 vTextureCoord;
+uniform sampler2D uSampler;
+uniform vec4 inputSize;
+uniform vec4 inputClamp;
+uniform vec4 outputFrame;
+uniform vec3 oilTint;
+void main(){
+ vec4 source=texture2D(uSampler,vTextureCoord);
+ float y=vTextureCoord.y*inputSize.y+outputFrame.y;
+ float join=1.0-smoothstep(219.0,251.0,y)+smoothstep(482.0,516.0,y);
+ float blurred=0.0;
+ float weights=0.0;
+ for(int ix=-2;ix<=2;ix++){
+  for(int iy=-2;iy<=2;iy++){
+   vec2 offset=vec2(float(ix),float(iy));
+   float weight=exp(-dot(offset,offset)*0.5);
+   vec2 uv=clamp(vTextureCoord+offset*3.5*inputSize.zw,inputClamp.xy,inputClamp.zw);
+   blurred+=texture2D(uSampler,uv).a*weight;
+   weights+=weight;
+  }
+ }
+ float fused=smoothstep(0.30,0.58,blurred/weights);
+ float alpha=mix(source.a,fused,clamp(join,0.0,1.0))*0.48;
+ gl_FragColor=vec4(oilTint*alpha,alpha);
+}`;
+const liquidColors={};
+for(const kind of ['pink','teal']){
+ const layer=new PIXI.Container();
+ const color=oilColor(kind);
+ const filter=new PIXI.Filter(undefined,liquidFragment,{
+  oilTint:[((color>>16)&255)/255,((color>>8)&255)/255,(color&255)/255]
+ });
+ filter.padding=14;
+ layer.filters=[filter];
+ layer.filterArea=new PIXI.Rectangle(92,49,216,519);
+ maskedScene.addChild(layer);
+ const top=new PIXI.Graphics(),pool=new PIXI.Graphics(),nozzle=new PIXI.Graphics();
+ layer.addChild(top,pool,nozzle);
+ liquidColors[kind]={layer,top,pool,nozzle};
+}
+// Keep glass reflections above both independently fused colors.
+maskedScene.addChild(reflectionLayer);
 const topHighlight=new PIXI.Graphics();
-oilLayer.addChild(topOil,pool,nozzle,topHighlight);
+reflectionLayer.addChild(topHighlight);
 
 function drawInteriorMask(){
  maskShape.clear().beginFill(0xffffff).drawRoundedRect(92,49,216,519,15).endFill();
@@ -152,20 +192,22 @@ function drawBlob(graphics,color,alpha,rx,ry){
 function makeDrop(kind,side){
  const g=new PIXI.Graphics();
  const r=19+Math.random()*6;
- drawBlob(g,oilColor(kind),.48,r,r*(.86+Math.random()*.22));
+ drawBlob(g,oilColor(kind),1,r,r*(.86+Math.random()*.22));
  g.blendMode=PIXI.BLEND_MODES.NORMAL;
- dropLayer.addChild(g);
+ liquidColors[kind].layer.addChild(g);
  droplets.push({g,kind,side,x:200+side*4,y:198,
   vy:13+Math.random()*4,wobble:Math.random()*Math.PI*2,
   age:0,r,spread:24+Math.random()*22});
  g.position.set(200+side*4,198);
+ g.scale.set(.35);
 }
 
 function makeBead(kind,x,y,r){
  const g=new PIXI.Graphics();
- drawBlob(g,oilColor(kind),.56+Math.random()*.12,r,r*(.58+Math.random()*.35));
+ drawBlob(g,oilColor(kind),1,r,r*(.58+Math.random()*.35));
  g.rotation=(Math.random()-.5)*.7;
- beadLayer.addChild(g);
+ liquidColors[kind].layer.addChild(g);
+ g.position.set(x,y);
  beads.push({g,kind,x,y,r,phase:Math.random()*Math.PI*2});
  if(beads.length>120){
   const old=beads.shift();
@@ -174,35 +216,39 @@ function makeBead(kind,x,y,r){
 }
 
 function deposit(drop){
- const y=548-Math.random()*26;
+ const y=544+Math.random()*6;
  const x=Math.max(116,Math.min(284,drop.x));
  makeBead(drop.kind,x,y,drop.r*(.72+Math.random()*.16));
 }
 
 function drawStaticOil(){
  const wave=Math.sin(time*.25)*2;
- topOil.clear();
- // Two shallow reservoirs taper internally into the same central outlet.
- for(const [color,offset] of [[0xff40ad,-3],[0x13cfc7,3]]){
-  topOil.beginFill(color,.43);
-  topOil.moveTo(94,94+offset);
-  topOil.bezierCurveTo(150,91+wave+offset,250,98-wave+offset,306,94+offset);
-  topOil.lineTo(306,145+offset);
-  topOil.bezierCurveTo(284,163,238,175,200+offset,189);
-  topOil.bezierCurveTo(162,175,116,163,94,145+offset);
-  topOil.closePath();topOil.endFill();
+ for(const kind of ['pink','teal']){
+  const {top,pool,nozzle}=liquidColors[kind];
+  const color=oilColor(kind),offset=kind==='pink'?-3:3;
+  top.clear().beginFill(color,1);
+  top.moveTo(94,94+offset);
+  top.bezierCurveTo(150,91+wave+offset,250,98-wave+offset,306,94+offset);
+  top.lineTo(306,145+offset);
+  top.bezierCurveTo(284,163,238,175,200+offset,189);
+  top.bezierCurveTo(162,175,116,163,94,145+offset);
+  top.closePath();top.endFill();
+  // A growing pendant connects to the reservoir before slowly detaching.
+  nozzle.clear().beginFill(color,1);
+  nozzle.drawEllipse(200+offset,187,8,13);
+  const forming=droplets.find(d=>d.kind===kind&&d.age<1.3);
+  if(forming){
+   const neck=Math.max(2,8*(1-forming.age/1.3));
+   nozzle.drawEllipse(200+offset,198+forming.age*7,neck,15);
+  }
+  nozzle.endFill();
+  pool.clear().beginFill(color,1);
+  pool.drawEllipse(kind==='pink'?171:229,557,77,13);
+  pool.endFill();
  }
  topHighlight.clear();
  topHighlight.lineStyle(1,0xffffff,.28);
  topHighlight.moveTo(96,94);topHighlight.bezierCurveTo(154,90+wave,249,98-wave,304,94);
- nozzle.clear();
- for(const [color,x] of [[0xff55b7,197],[0x12d7ca,203]]){
-  nozzle.beginFill(color,.46);nozzle.drawEllipse(x,190,5,12);nozzle.endFill();
- }
- pool.clear();
- for(const [color,x] of [[0xff4eb4,171],[0x13cfc7,229]]){
-  pool.beginFill(color,.24);pool.drawEllipse(x,557,77,15);pool.endFill();
- }
 }
 
 function drawReflections(){
@@ -231,6 +277,7 @@ function resetOil(){
   d.age=2+i*2.5;d.y=198+d.age*d.vy;
   d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
   d.g.position.set(d.x,d.y);
+  d.g.scale.set(1);
  }
 }
 
@@ -245,8 +292,8 @@ function update(delta){
   makeDrop(kind,nextPink?-1:1);
   nextPink=!nextPink;
  }
- drawStaticOil();
  droplets=filterAliveDrops(dt);
+ drawStaticOil();
  beads.forEach((b)=>{
   b.phase+=dt*2;
   b.g.x=b.x+Math.sin(b.phase)*.7;
@@ -263,7 +310,9 @@ function filterAliveDrops(dt){
   d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
   d.g.position.set(d.x,d.y);
   d.g.rotation=Math.sin(d.age*.45+d.wobble)*.12;
-  d.g.scale.set(1+Math.sin(d.age*.65)*.05,1+Math.cos(d.age*.55)*.04);
+  const growth=.35+.65*Math.min(1,d.age/1.3);
+  const settling=Math.max(0,Math.min(1,(d.y-510)/26));
+  d.g.scale.set(growth*(1+Math.sin(d.age*.65)*.05+settling*.22),growth*(1+Math.cos(d.age*.55)*.04-settling*.25));
   if(d.y>=536){deposit(d);d.g.destroy();}else{alive.push(d);}
  });
  return alive;
