@@ -51,6 +51,27 @@ button.primary:hover{background:#375955}
   </header>
   <div class="timer-stage" aria-label="透明容器の中央からピンクと青緑のオイルが落ちるアニメーション">
    <div id="pixi-stage"></div>
+   <svg id="liquid-joins" class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
+    <defs>
+     <filter id="liquid-fuse" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="soft"/>
+      <feColorMatrix in="soft" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
+     </filter>
+     <clipPath id="liquid-interior"><rect x="92" y="49" width="216" height="519" rx="15"/></clipPath>
+     <linearGradient id="join-zones" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="white"/><stop offset=".355" stop-color="white"/>
+      <stop offset=".411" stop-color="black"/><stop offset=".782" stop-color="black"/>
+      <stop offset=".837" stop-color="white"/><stop offset="1" stop-color="white"/>
+     </linearGradient>
+     <mask id="join-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="620">
+      <rect width="400" height="620" fill="url(#join-zones)"/>
+     </mask>
+    </defs>
+    <g clip-path="url(#liquid-interior)" mask="url(#join-mask)">
+     <g opacity=".48"><g id="join-pink" fill="#ff4eb4" filter="url(#liquid-fuse)"></g></g>
+     <g opacity=".48"><g id="join-teal" fill="#10d5c8" filter="url(#liquid-fuse)"></g></g>
+    </g>
+   </svg>
    <svg class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
     <defs>
      <linearGradient id="glassBody" x1="0" x2="1">
@@ -131,6 +152,52 @@ const nozzle=new PIXI.Graphics();
 const topHighlight=new PIXI.Graphics();
 oilLayer.addChild(topOil,pool,nozzle,topHighlight);
 
+// SVG blur + alpha contrast is supported independently of Pixi's WebGL shaders.
+const svgNS='http://www.w3.org/2000/svg';
+const joinGroups={pink:document.getElementById('join-pink'),teal:document.getElementById('join-teal')};
+let joinsEnabled=typeof window.SVGFEGaussianBlurElement!=='undefined';
+function ellipseNode(parent,x,y,rx,ry){
+ const node=document.createElementNS(svgNS,'ellipse');
+ for(const [key,value] of Object.entries({cx:x,cy:y,rx,ry}))node.setAttribute(key,value);
+ parent.appendChild(node);return node;
+}
+function joinStrength(y){
+ return Math.max(0,Math.min(1,(255-y)/35),Math.min(1,(y-485)/34));
+}
+function resetJoins(){
+ if(!joinsEnabled)return;
+ for(const kind of ['pink','teal']){
+  const group=joinGroups[kind];group.replaceChildren();
+  ellipseNode(group,kind==='pink'?197:203,182,7,20);
+  ellipseNode(group,kind==='pink'?171:229,557,77,13);
+ }
+}
+function updateJoins(){
+ if(!joinsEnabled)return;
+ try{
+  for(const d of droplets){
+   const strength=joinStrength(d.y);
+   d.g.alpha=1-strength;
+   if(strength>0){
+    if(!d.joinNode)d.joinNode=ellipseNode(joinGroups[d.kind],d.x,d.y,d.r,d.ry);
+    d.joinNode.setAttribute('cx',d.x);d.joinNode.setAttribute('cy',d.y);
+    d.joinNode.setAttribute('rx',d.r*d.sx);d.joinNode.setAttribute('ry',d.ry*d.sy);
+    d.joinNode.setAttribute('transform','rotate('+d.g.rotation*180/Math.PI+' '+d.x+' '+d.y+')');
+   }else if(d.joinNode){d.joinNode.remove();d.joinNode=null;}
+  }
+  for(const b of beads){
+   b.g.alpha=0;
+   if(!b.joinNode)b.joinNode=ellipseNode(joinGroups[b.kind],b.x,b.y,b.r,b.ry);
+   b.joinNode.setAttribute('cx',b.g.x);b.joinNode.setAttribute('cy',b.g.y);
+  }
+ }catch(error){
+  // Any DOM update failure restores the complete original drawing.
+  joinsEnabled=false;document.getElementById('liquid-joins').style.display='none';
+  droplets.forEach(d=>d.g.alpha=1);beads.forEach(b=>b.g.alpha=1);
+  drawStaticOil();console.warn('Liquid joins disabled:',error);
+ }
+}
+
 function drawInteriorMask(){
  maskShape.clear().beginFill(0xffffff).drawRoundedRect(92,49,216,519,15).endFill();
 }
@@ -152,29 +219,33 @@ function drawBlob(graphics,color,alpha,rx,ry){
 function makeDrop(kind,side){
  const g=new PIXI.Graphics();
  const r=19+Math.random()*6;
- drawBlob(g,oilColor(kind),.48,r,r*(.86+Math.random()*.22));
+ const ry=r*(.86+Math.random()*.22);
+ drawBlob(g,oilColor(kind),.48,r,ry);
  g.blendMode=PIXI.BLEND_MODES.NORMAL;
  dropLayer.addChild(g);
  droplets.push({g,kind,side,x:200+side*4,y:198,
   vy:13+Math.random()*4,wobble:Math.random()*Math.PI*2,
-  age:0,r,spread:24+Math.random()*22});
+  age:0,r,ry,sx:1,sy:1,spread:24+Math.random()*22});
  g.position.set(200+side*4,198);
 }
 
 function makeBead(kind,x,y,r){
  const g=new PIXI.Graphics();
- drawBlob(g,oilColor(kind),.56+Math.random()*.12,r,r*(.58+Math.random()*.35));
+ const ry=r*(.58+Math.random()*.35);
+ drawBlob(g,oilColor(kind),.56+Math.random()*.12,r,ry);
  g.rotation=(Math.random()-.5)*.7;
  beadLayer.addChild(g);
- beads.push({g,kind,x,y,r,phase:Math.random()*Math.PI*2});
+ g.position.set(x,y);
+ beads.push({g,kind,x,y,r,ry,phase:Math.random()*Math.PI*2});
  if(beads.length>120){
   const old=beads.shift();
+  if(old.joinNode)old.joinNode.remove();
   old.g.destroy();
  }
 }
 
 function deposit(drop){
- const y=548-Math.random()*26;
+ const y=544+Math.random()*7;
  const x=Math.max(116,Math.min(284,drop.x));
  makeBead(drop.kind,x,y,drop.r*(.72+Math.random()*.16));
 }
@@ -195,10 +266,12 @@ function drawStaticOil(){
  topHighlight.clear();
  topHighlight.lineStyle(1,0xffffff,.28);
  topHighlight.moveTo(96,94);topHighlight.bezierCurveTo(154,90+wave,249,98-wave,304,94);
+ nozzle.visible=!joinsEnabled;
  nozzle.clear();
  for(const [color,x] of [[0xff55b7,197],[0x12d7ca,203]]){
   nozzle.beginFill(color,.46);nozzle.drawEllipse(x,190,5,12);nozzle.endFill();
  }
+ pool.visible=!joinsEnabled;
  pool.clear();
  for(const [color,x] of [[0xff4eb4,171],[0x13cfc7,229]]){
   pool.beginFill(color,.24);pool.drawEllipse(x,557,77,15);pool.endFill();
@@ -220,6 +293,7 @@ function resetOil(){
  spawn=0;
  time=0;
  nextPink=true;
+ resetJoins();
  for(let i=0;i<16;i++){
   const kind=i%2?'teal':'pink';
   makeBead(kind,116+Math.random()*168,548+Math.random()*12,8+Math.random()*10);
@@ -232,6 +306,7 @@ function resetOil(){
   d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
   d.g.position.set(d.x,d.y);
  }
+ updateJoins();
 }
 
 function update(delta){
@@ -252,6 +327,7 @@ function update(delta){
   b.g.x=b.x+Math.sin(b.phase)*.7;
   b.g.y=b.y+Math.cos(b.phase*.7)*.35;
  });
+ updateJoins();
  clock.textContent='FLOW';
 }
 
@@ -263,8 +339,12 @@ function filterAliveDrops(dt){
   d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
   d.g.position.set(d.x,d.y);
   d.g.rotation=Math.sin(d.age*.45+d.wobble)*.12;
-  d.g.scale.set(1+Math.sin(d.age*.65)*.05,1+Math.cos(d.age*.55)*.04);
-  if(d.y>=536){deposit(d);d.g.destroy();}else{alive.push(d);}
+  const growth=.4+.6*Math.min(1,d.age/1.1);
+  const flatten=Math.max(0,(d.y-512)/24);
+  d.sx=growth*(1+Math.sin(d.age*.65)*.05+flatten*.2);
+  d.sy=growth*(1+Math.cos(d.age*.55)*.04-flatten*.22);
+  d.g.scale.set(d.sx,d.sy);
+  if(d.y>=536){deposit(d);if(d.joinNode)d.joinNode.remove();d.g.destroy();}else{alive.push(d);}
  });
  return alive;
 }
