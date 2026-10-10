@@ -10,10 +10,10 @@
 *{box-sizing:border-box}
 body{margin:0;min-height:100vh;overflow-x:hidden;background:#e4e7e7}
 .room{min-height:100vh;position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;overflow:hidden}
-.wall{position:absolute;inset:0 0 26% 0;z-index:-3;background:radial-gradient(ellipse at 48% 24%,#f2f3f0 0%,#dfe4e3 56%,#c7cfce 100%)}
+.wall{position:absolute;inset:0 0 auto 0;height:var(--table-top,74vh);z-index:-3;background:radial-gradient(ellipse at 48% 24%,#f2f3f0 0%,#dfe4e3 56%,#c7cfce 100%)}
 .wall:after{content:"";position:absolute;inset:0;opacity:.22;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888888' filter='url(%23n)' opacity='.19' d='M0 0h140v140H0z'/%3E%3C/svg%3E")}
 .wall:before{content:"";position:absolute;right:7%;top:9%;width:min(22vw,210px);height:min(25vw,240px);border:11px solid #675a54;box-shadow:0 8px 22px #4c403522,inset 0 0 0 1px #fff6;background:linear-gradient(135deg,#faf7ef,#d8dddc);opacity:.34;transform:rotate(.6deg)}
-.tabletop{position:absolute;top:74%;bottom:0;left:0;right:0;z-index:-2;border-top:7px solid #b88e70;background:repeating-linear-gradient(1deg,transparent 0 10px,#79533c0d 11px 12px,transparent 13px 32px),linear-gradient(90deg,#9c6b4c,#d7ae88 29%,#bd8b66 64%,#9d6f50);box-shadow:inset 0 16px 22px #79553e3a,0 -4px 24px #ffffff80}
+.tabletop{position:absolute;top:var(--table-top,74vh);bottom:0;left:0;right:0;z-index:-2;border-top:7px solid #b88e70;background:repeating-linear-gradient(1deg,transparent 0 10px,#79533c0d 11px 12px,transparent 13px 32px),linear-gradient(90deg,#9c6b4c,#d7ae88 29%,#bd8b66 64%,#9d6f50);box-shadow:inset 0 16px 22px #79553e3a,0 -4px 24px #ffffff80}
 .tabletop:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(91deg,transparent 0 95px,#6f49381b 97px 99px,transparent 101px 210px),linear-gradient(180deg,#ffffff24,#2c170a13);opacity:.62}
 .light{position:absolute;left:50%;bottom:17%;width:470px;height:92px;transform:translateX(-50%);background:#49362742;filter:blur(30px);border-radius:50%;z-index:-1}
 .app{width:min(100%,930px);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 22px 32px}
@@ -104,6 +104,25 @@ button.primary:hover{background:#375955}
   </section>
  </div>
 </main>
+<script>
+(()=>{
+ const room=document.querySelector('.room');
+ const stage=document.querySelector('.timer-stage');
+ function alignTable(){
+  const roomRect=room.getBoundingClientRect();
+  const stageRect=stage.getBoundingClientRect();
+  // Glass spans y=37..583 in the 620-unit viewBox. Its lower third starts at 401.
+  const boundary=stageRect.top-roomRect.top+stageRect.height*(401/620);
+  room.style.setProperty('--table-top',boundary+'px');
+ }
+ alignTable();
+ window.addEventListener('resize',alignTable);
+ if(window.ResizeObserver){
+  const observer=new ResizeObserver(alignTable);
+  observer.observe(room);observer.observe(stage);
+ }
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
 <script>
 (()=>{
