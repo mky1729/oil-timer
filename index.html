@@ -2,30 +2,30 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#e8e9e7">
 <title>Oil Timer - Pixi oil flow</title>
 <style>
 :root{font-family:"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#4e5557}
 *{box-sizing:border-box}
-body{margin:0;min-height:100vh;overflow-x:hidden;background:#e4e7e7}
-.room{min-height:100vh;position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;overflow:hidden}
+body{margin:0;min-height:100svh;overflow-x:hidden;background:#e4e7e7}
+.room{min-height:100svh;position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .wall{position:absolute;inset:0 0 auto 0;height:var(--table-top,74vh);z-index:-3;background:radial-gradient(ellipse at 48% 24%,#f2f3f0 0%,#dfe4e3 56%,#c7cfce 100%)}
 .wall:after{content:"";position:absolute;inset:0;opacity:.22;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888888' filter='url(%23n)' opacity='.19' d='M0 0h140v140H0z'/%3E%3C/svg%3E")}
 .wall:before{content:"";position:absolute;right:7%;top:9%;width:min(22vw,210px);height:min(25vw,240px);border:11px solid #675a54;box-shadow:0 8px 22px #4c403522,inset 0 0 0 1px #fff6;background:linear-gradient(135deg,#faf7ef,#d8dddc);opacity:.34;transform:rotate(.6deg)}
 .tabletop{position:absolute;top:var(--table-top,74vh);bottom:0;left:0;right:0;z-index:-2;border-top:7px solid #b88e70;background:repeating-linear-gradient(1deg,transparent 0 10px,#79533c0d 11px 12px,transparent 13px 32px),linear-gradient(90deg,#9c6b4c,#d7ae88 29%,#bd8b66 64%,#9d6f50);box-shadow:inset 0 16px 22px #79553e3a,0 -4px 24px #ffffff80}
 .tabletop:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(91deg,transparent 0 95px,#6f49381b 97px 99px,transparent 101px 210px),linear-gradient(180deg,#ffffff24,#2c170a13);opacity:.62}
 .light{position:absolute;left:50%;bottom:17%;width:470px;height:92px;transform:translateX(-50%);background:#49362742;filter:blur(30px);border-radius:50%;z-index:-1}
-.app{width:min(100%,930px);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 22px 32px}
+.app{width:min(100%,930px);min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px 16px calc(14px + env(safe-area-inset-bottom,0px))}
 .header{text-align:center;margin:0 0 2px;text-shadow:0 1px 8px #ffffffbc}
 .eyebrow{font-size:10px;letter-spacing:.42em;font-weight:600;color:#8b9292}
 .header h1{margin:8px 0 0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,5vw,43px);font-weight:400;letter-spacing:.085em;color:#505657}
 .subtitle{margin:9px 0 0;font-size:11px;letter-spacing:.19em;color:#8a9190}
-.timer-stage{position:relative;width:min(360px,78vw);aspect-ratio:400/620;margin:-4px auto 10px;filter:drop-shadow(11px 16px 10px #42392d34)}
+.timer-stage{position:relative;width:min(360px,78vw,var(--stage-width,360px));flex-shrink:0;aspect-ratio:400/620;margin:-4px auto 10px;filter:drop-shadow(11px 16px 10px #42392d34)}
 #pixi-stage{position:absolute;inset:0}
 #pixi-stage canvas{display:block;width:100%;height:100%}
 .glass-overlay{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
-.controls{z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:12px;margin-top:4px}
+.controls{z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px;padding-bottom:4px;margin-top:4px}
 .clock{font:300 35px/1 Georgia,"Times New Roman",serif;letter-spacing:.1em;font-variant-numeric:tabular-nums;color:#50595b;text-shadow:0 1px 10px #ffffffb0}
 .actions{display:flex;gap:12px;align-items:center}
 button{appearance:none;border:1px solid #fff9;background:#ffffffa9;color:#566160;padding:12px 27px;border-radius:999px;cursor:pointer;font:500 12px/1 "Segoe UI",sans-serif;letter-spacing:.16em;min-width:105px;box-shadow:0 4px 18px #6d67502b;backdrop-filter:blur(12px);transition:background .2s,transform .2s}
@@ -33,9 +33,9 @@ button:hover{background:#fff;transform:translateY(-1px)}
 button:focus-visible{outline:3px solid #008c94;outline-offset:3px}
 button.primary{background:#526b68;color:white;border-color:#526b68}
 button.primary:hover{background:#375955}
-.palette{display:flex;align-items:center;gap:9px;font-size:11px;color:#4e5557}.palette select{font:inherit;color:inherit;background:#ffffffc9;border:1px solid #ffffffaa;border-radius:16px;padding:8px 12px}.palette select:focus-visible{outline:3px solid #008c94;outline-offset:3px}
+.palette{display:flex;align-items:center;gap:9px;font-size:11px;color:#4e5557}.palette select{font:16px/1.2 "Segoe UI",sans-serif;color:inherit;max-width:calc(100vw - 110px);background:#ffffffc9;border:1px solid #ffffffaa;border-radius:16px;padding:8px 12px}.palette select:focus-visible{outline:3px solid #008c94;outline-offset:3px}
 .caption{font-size:11px;letter-spacing:.12em;color:#74807e;text-shadow:0 1px 8px #fff}
-@media(max-height:780px){.app{justify-content:flex-start}.timer-stage{width:min(262px,58vh);margin-top:-4px;margin-bottom:14px}.header h1{font-size:31px}.subtitle{margin-top:4px}.clock{font-size:30px}}
+@media(max-height:780px){.app{justify-content:flex-start}.timer-stage{margin-top:-4px;margin-bottom:8px}.header h1{font-size:31px}.subtitle{margin-top:4px}.clock{font-size:30px}}
 @media(prefers-reduced-motion:reduce){button{transition:none}}
 </style>
 </head>
@@ -56,7 +56,20 @@ button.primary:hover{background:#375955}
     <defs>
      <filter id="liquid-fuse" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
       <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="soft"/>
-      <feColorMatrix in="soft" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7"/>
+      <feColorMatrix in="soft" type="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 18 -7" result="fused"/>
+      <!-- Shade and reflection follow the fused reservoir/pool contour. -->
+      <feColorMatrix in="fused" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="fusedAlpha"/>
+      <feGaussianBlur in="fusedAlpha" stdDeviation=".8" result="poolSoft"/>
+      <feOffset in="poolSoft" dx="-.4" dy="-2.2" result="poolInset"/>
+      <feComposite in="fusedAlpha" in2="poolInset" operator="out" result="poolLowerEdge"/>
+      <feFlood flood-color="#102b42" flood-opacity=".42" result="poolInk"/>
+      <feComposite in="poolInk" in2="poolLowerEdge" operator="in" result="poolShadow"/>
+      <feComposite in="poolShadow" in2="fused" operator="atop" result="shadedPool"/>
+      <feOffset in="fusedAlpha" dy="1.1" result="highlightInset"/>
+      <feComposite in="fusedAlpha" in2="highlightInset" operator="out" result="poolUpperEdge"/>
+      <feFlood flood-color="#fff5e6" flood-opacity=".48" result="poolLight"/>
+      <feComposite in="poolLight" in2="poolUpperEdge" operator="in" result="poolHighlight"/>
+      <feComposite in="poolHighlight" in2="shadedPool" operator="atop"/>
      </filter>
      <!-- Shade the inner silhouette after fusion, so merged droplets have no seams. -->
      <filter id="oil-inner-edge" x="-5%" y="-5%" width="110%" height="110%" color-interpolation-filters="sRGB">
@@ -142,20 +155,33 @@ button.primary:hover{background:#375955}
 <script>
 (()=>{
  const room=document.querySelector('.room');
+ const app=document.querySelector('.app');
+ const header=document.querySelector('.header');
+ const controls=document.querySelector('.controls');
  const stage=document.querySelector('.timer-stage');
  function alignTable(){
+  // Safari's toolbars and keyboard change the usable viewport height.
+  const height=window.visualViewport?window.visualViewport.height:window.innerHeight;
+  const padding=getComputedStyle(app);
+  const available=height-header.getBoundingClientRect().height-controls.getBoundingClientRect().height
+   -parseFloat(padding.paddingTop)-parseFloat(padding.paddingBottom)-24;
+  const stageWidth=Math.max(80,Math.min(360,window.innerWidth*.78,available*400/620));
+  const widthValue=stageWidth.toFixed(2)+'px';
+  if(room.style.getPropertyValue('--stage-width')!==widthValue)room.style.setProperty('--stage-width',widthValue);
   const roomRect=room.getBoundingClientRect();
   const stageRect=stage.getBoundingClientRect();
-  // Glass spans y=37..583 in the 620-unit viewBox. Its lower quarter starts at 446.5.
+  // Glass spans y=37..583 in the 620-unit viewBox. Lower quarter starts at 446.5.
   const boundary=stageRect.top-roomRect.top+stageRect.height*(446.5/620);
   room.style.setProperty('--table-top',boundary+'px');
  }
  alignTable();
  window.addEventListener('resize',alignTable);
+ if(window.visualViewport)window.visualViewport.addEventListener('resize',alignTable);
  if(window.ResizeObserver){
   const observer=new ResizeObserver(alignTable);
-  observer.observe(room);observer.observe(stage);
+  observer.observe(room);observer.observe(stage);observer.observe(header);observer.observe(controls);
  }
+ if(document.fonts)document.fonts.ready.then(alignTable);
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/pixi.js@7.4.2/dist/pixi.min.js"></script>
