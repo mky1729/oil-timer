@@ -68,8 +68,8 @@ button.primary:hover{background:#375955}
      </mask>
     </defs>
     <g clip-path="url(#liquid-interior)" mask="url(#join-mask)">
-     <g opacity=".48"><g id="join-pink" fill="#ff4eb4" filter="url(#liquid-fuse)"></g></g>
-     <g opacity=".48"><g id="join-teal" fill="#10d5c8" filter="url(#liquid-fuse)"></g></g>
+     <g opacity=".72"><g id="join-pink" fill="#ff00b8" filter="url(#liquid-fuse)"></g></g>
+     <g opacity=".72"><g id="join-teal" fill="#00c4df" filter="url(#liquid-fuse)"></g></g>
     </g>
    </svg>
    <svg class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
@@ -111,8 +111,8 @@ button.primary:hover{background:#375955}
  function alignTable(){
   const roomRect=room.getBoundingClientRect();
   const stageRect=stage.getBoundingClientRect();
-  // Glass spans y=37..583 in the 620-unit viewBox. Its lower third starts at 401.
-  const boundary=stageRect.top-roomRect.top+stageRect.height*(401/620);
+  // Glass spans y=37..583 in the 620-unit viewBox. Its lower quarter starts at 446.5.
+  const boundary=stageRect.top-roomRect.top+stageRect.height*(446.5/620);
   room.style.setProperty('--table-top',boundary+'px');
  }
  alignTable();
@@ -224,7 +224,7 @@ function drawInteriorMask(){
 }
 
 function oilColor(kind){
- return kind==='pink'?0xff4eb4:0x10d5c8;
+ return kind==='pink'?0xff00b8:0x00c4df;
 }
 
 // Flat, translucent lenses: source-over compositing preserves both colors at overlaps.
@@ -241,7 +241,7 @@ function makeDrop(kind,side){
  const g=new PIXI.Graphics();
  const r=19+Math.random()*6;
  const ry=r*(.86+Math.random()*.22);
- drawBlob(g,oilColor(kind),.48,r,ry);
+ drawBlob(g,oilColor(kind),.72,r,ry);
  g.blendMode=PIXI.BLEND_MODES.NORMAL;
  dropLayer.addChild(g);
  droplets.push({g,kind,side,x:200+side*4,y:184,
@@ -254,7 +254,7 @@ function makeDrop(kind,side){
 function makeBead(kind,x,y,r){
  const g=new PIXI.Graphics();
  const ry=r*(.58+Math.random()*.35);
- drawBlob(g,oilColor(kind),.56+Math.random()*.12,r,ry);
+ drawBlob(g,oilColor(kind),.72+Math.random()*.06,r,ry);
  g.rotation=(Math.random()-.5)*.7;
  beadLayer.addChild(g);
  g.position.set(x,y);
@@ -277,8 +277,8 @@ function drawStaticOil(){
  topOil.visible=!joinsEnabled;
  topOil.clear();
  // Two shallow reservoirs taper internally into the same central outlet.
- for(const [color,offset] of [[0xff40ad,-3],[0x13cfc7,3]]){
-  topOil.beginFill(color,.43);
+ for(const [color,offset] of [[0xff00b8,-3],[0x00c4df,3]]){
+  topOil.beginFill(color,.72);
   topOil.moveTo(94,94+offset);
   topOil.bezierCurveTo(150,91+wave+offset,250,98-wave+offset,306,94+offset);
   topOil.lineTo(306,145+offset);
@@ -295,8 +295,8 @@ function drawStaticOil(){
  topHighlight.moveTo(96,94);topHighlight.bezierCurveTo(154,90+wave,249,98-wave,304,94);
  pool.visible=!joinsEnabled;
  pool.clear();
- for(const [color,x] of [[0xff4eb4,171],[0x13cfc7,229]]){
-  pool.beginFill(color,.24);pool.drawEllipse(x,557,77,15);pool.endFill();
+ for(const [color,x] of [[0xff00b8,171],[0x00c4df,229]]){
+  pool.beginFill(color,.72);pool.drawEllipse(x,557,77,15);pool.endFill();
  }
 }
 
