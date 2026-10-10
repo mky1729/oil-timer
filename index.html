@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#e8e9e7">
+<title>Oil Timer — 3 minutes of calm</title>
+<style>
+:root{font-family:"Segoe UI","Hiragino Kaku Gothic ProN",Meiryo,sans-serif;color:#53575b}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;overflow-x:hidden;background:#e4e7e7}
+.room{min-height:100vh;position:relative;isolation:isolate;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.wall{position:absolute;inset:0 0 26% 0;z-index:-3;background:radial-gradient(ellipse at 48% 24%,#f2f3f0 0%,#e0e4e3 55%,#c7cfce 100%)}
+.wall:after{content:"";position:absolute;inset:0;opacity:.22;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 140 140' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.55' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Cpath fill='%23888888' filter='url(%23n)' opacity='.19' d='M0 0h140v140H0z'/%3E%3C/svg%3E")}
+.tabletop{position:absolute;top:74%;bottom:0;left:0;right:0;z-index:-2;border-top:7px solid #b88e70;background:repeating-linear-gradient(1deg,transparent 0 10px,#79533c0d 11px 12px,transparent 13px 32px),linear-gradient(90deg,#a77754,#d3a984 29%,#ba8a68 64%,#aa7856);box-shadow:inset 0 16px 22px #79553e3a,0 -4px 24px #ffffff80}
+.tabletop:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(91deg,transparent 0 95px,#6f49381b 97px 99px,transparent 101px 210px);opacity:.5}
+.light{position:absolute;left:50%;bottom:17%;width:450px;height:80px;transform:translateX(-50%);background:#55402d40;filter:blur(28px);border-radius:50%;z-index:-1}
+.app{width:min(100%,930px);min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px 22px 32px}
+.header{text-align:center;margin:0 0 2px;text-shadow:0 1px 8px #ffffffbc}
+.eyebrow{font-size:10px;letter-spacing:.42em;font-weight:600;color:#8b9292}.header h1{margin:8px 0 0;font-family:Georgia,"Times New Roman",serif;font-size:clamp(28px,5vw,43px);font-weight:400;letter-spacing:.085em;color:#505657}.subtitle{margin:9px 0 0;font-size:11px;letter-spacing:.19em;color:#8a9190}
+.timer-stage{position:relative;width:min(390px,80vw);margin:-6px auto -8px;filter:drop-shadow(10px 14px 9px #42392d30)}
+.timer-stage svg{display:block;width:100%;height:auto;overflow:visible}
+.glass-body{fill:url(#glassBody);stroke:#ffffffbd;stroke-width:3}.glass-outline{fill:none;stroke:#9babb09c;stroke-width:6}.glass-inner{fill:none;stroke:#fff;stroke-opacity:.68;stroke-width:2}
+.drop{opacity:.92}.controls{z-index:2;text-align:center;display:flex;flex-direction:column;align-items:center;gap:12px;padding-bottom:12px}
+.clock{font:300 35px/1 Georgia,"Times New Roman",serif;letter-spacing:.1em;font-variant-numeric:tabular-nums;color:#50595b;text-shadow:0 1px 10px #ffffffb0}
+.actions{display:flex;gap:12px;align-items:center}
+button{appearance:none;border:1px solid #fff9;background:#ffffffa9;color:#566160;padding:12px 27px;border-radius:999px;cursor:pointer;font:500 12px/1 "Segoe UI",sans-serif;letter-spacing:.16em;min-width:105px;box-shadow:0 4px 18px #6d67502b;backdrop-filter:blur(12px);transition:background .2s,transform .2s}
+button:hover{background:#fff;transform:translateY(-1px)}button:focus-visible{outline:3px solid #008c94;outline-offset:3px}
+button.primary{background:#526b68;color:white;border-color:#526b68}button.primary:hover{background:#375955}
+.caption{font-size:11px;letter-spacing:.12em;color:#74807e;text-shadow:0 1px 8px #fff}
+@media(max-height:780px){.app{justify-content:flex-start}.timer-stage{width:min(305px,65vh);margin-top:-4px}.header h1{font-size:31px}.subtitle{margin-top:4px}.clock{font-size:30px}}
+@media(prefers-reduced-motion:reduce){button{transition:none}}
+</style>
+</head>
+<body>
+<main class="room">
+ <div class="wall" aria-hidden="true"></div><div class="tabletop" aria-hidden="true"></div><div class="light" aria-hidden="true"></div>
+ <div class="app">
+ <header class="header"><div class="eyebrow">A MOMENT OF STILLNESS</div><h1>Oil Timer</h1><p class="subtitle">ふたつの色が、ゆっくり時を刻む。</p></header>
+ <div class="timer-stage">
+ <svg viewBox="0 0 400 620" role="img" aria-label="くびれた透明のガラス容器の中心からピンクと青緑のオイルが落ちるアニメーション">
+ <defs>
+  <linearGradient id="glassBody" x1="0" x2="1"><stop stop-color="#fff" stop-opacity=".38"/><stop offset=".11" stop-color="#fff" stop-opacity=".06"/><stop offset=".50" stop-color="#d8f8fa" stop-opacity=".025"/><stop offset=".88" stop-color="#fff" stop-opacity=".07"/><stop offset="1" stop-color="#fff" stop-opacity=".49"/></linearGradient>
+  <linearGradient id="edge" x1="0" x2="1"><stop stop-color="#fff" stop-opacity=".85"/><stop offset=".26" stop-color="#b5c6cc" stop-opacity=".22"/><stop offset=".72" stop-color="#fff" stop-opacity=".23"/><stop offset="1" stop-color="#fff" stop-opacity=".9"/></linearGradient>
+  <linearGradient id="pink" x1="0" x2="1" y1="0" y2=".7"><stop stop-color="#ffb0d2" stop-opacity=".91"/><stop offset=".38" stop-color="#f52c92" stop-opacity=".78"/><stop offset="1" stop-color="#b92bb0" stop-opacity=".65"/></linearGradient>
+  <linearGradient id="teal" x1="0" x2="1" y1="0" y2=".8"><stop stop-color="#b1fff3" stop-opacity=".92"/><stop offset=".45" stop-color="#19d6c8" stop-opacity=".8"/><stop offset="1" stop-color="#038aa2" stop-opacity=".73"/></linearGradient>
+  <linearGradient id="reservoir" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#ff4ea9" stop-opacity=".57"/><stop offset=".43" stop-color="#ec47ba" stop-opacity=".65"/><stop offset=".45" stop-color="#26d8ca" stop-opacity=".63"/><stop offset="1" stop-color="#1baba9" stop-opacity=".75"/></linearGradient>
+  <linearGradient id="lowerPool" x1="0" x2=".5" y1="0" y2="1"><stop stop-color="#ff7fc3" stop-opacity=".49"/><stop offset=".6" stop-color="#24cfcb" stop-opacity=".6"/><stop offset="1" stop-color="#038eaf" stop-opacity=".65"/></linearGradient>
+  <radialGradient id="shine" cx=".29" cy=".2" r=".8"><stop stop-color="#fff" stop-opacity=".77"/><stop offset=".4" stop-color="#fff" stop-opacity=".09"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+  <clipPath id="interior"><path d="M112 43 Q105 45 105 60 L105 123 C105 193 143 247 172 309 C142 389 105 442 105 532 L105 557 Q105 566 117 566 L283 566 Q295 566 295 557 L295 532 C295 442 258 389 228 309 C257 247 295 193 295 123 L295 60 Q295 45 288 43Z"/></clipPath>
+ </defs>
+ <!-- Rear rim and transparent glass -->
+ <path class="glass-outline" d="M101 37 Q94 37 94 57 L94 126 C94 195 139 261 161 309 C139 373 94 449 94 532 L94 566 Q94 581 111 581 L289 581 Q306 581 306 566 L306 532 C306 449 261 373 239 309 C261 261 306 195 306 126 L306 57 Q306 37 299 37Z"/>
+ <path class="glass-body" d="M101 37 Q94 37 94 57 L94 126 C94 195 139 261 161 309 C139 373 94 449 94 532 L94 566 Q94 581 111 581 L289 581 Q306 581 306 566 L306 532 C306 449 261 373 239 309 C261 261 306 195 306 126 L306 57 Q306 37 299 37Z"/>
+ <g clip-path="url(#interior)">
+  <path id="upper-oil" fill="url(#reservoir)" d="M105 85 L295 85 L295 124 Q289 159 265 203 Q233 248 200 294 Q167 248 135 203 Q111 159 105 124Z"/>
+  <path id="upper-surface" d="M106 86 Q154 79 200 87 T294 86" fill="none" stroke="#ffe8fb" stroke-opacity=".8" stroke-width="4"/>
+  <g id="droplets"></g>
+  <path id="pool" fill="url(#lowerPool)" d="M105 560 L295 560 L295 565 L105 565Z"/>
+  <g id="beads"></g>
+  <path d="M108 558 Q190 567 291 558" stroke="#fff" stroke-opacity=".25" stroke-width="2" fill="none"/>
+ </g>
+ <path class="glass-inner" d="M110 62 L110 124 C110 202 148 254 175 308 M225 308 C252 254 290 202 290 124 L290 62 M175 312 C153 377 110 451 110 528 M225 312 C247 377 290 451 290 528"/>
+ <path d="M99 45 Q102 39 112 39 L287 39 Q300 40 301 47" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
+ <path d="M109 43 L288 43" stroke="#fff" stroke-opacity=".86" stroke-width="3" stroke-linecap="round"/>
+ <path d="M100 570 Q101 580 117 580 H283 Q299 580 300 570" fill="none" stroke="url(#edge)" stroke-width="9" stroke-linecap="round"/>
+ <path d="M116 571 Q200 575 284 571" fill="none" stroke="#fff" stroke-opacity=".66" stroke-width="3"/>
+ <path d="M102 85 Q98 178 148 274" stroke="white" stroke-opacity=".34" stroke-width="5" fill="none" stroke-linecap="round"/>
+ <path d="M297 90 Q300 175 252 273" stroke="white" stroke-opacity=".42" stroke-width="3" fill="none" stroke-linecap="round"/>
+ <path d="M147 362 Q113 440 103 503" stroke="white" stroke-opacity=".35" stroke-width="4" fill="none" stroke-linecap="round"/>
+ <path d="M253 362 Q286 439 296 508" stroke="white" stroke-opacity=".33" stroke-width="4" fill="none" stroke-linecap="round"/>
+ </svg>
+ </div>
+ <section class="controls" aria-label="タイマー操作">
+ <div id="clock" class="clock" role="timer" aria-label="残り時間">03:00</div>
+ <div class="actions"><button id="start" class="primary">スタート</button><button id="reset">リセット</button></div>
+ <div id="status" class="caption" aria-live="polite">静かな3分間を。</div>
+ </section>
+ </div>
+</main>
+<script>
+(()=>{
+'use strict';
+const DURATION=180000, svgNS='http://www.w3.org/2000/svg';
+const dropsGroup=document.getElementById('droplets'),beadsGroup=document.getElementById('beads');
+const upper=document.getElementById('upper-oil'),surface=document.getElementById('upper-surface'),pool=document.getElementById('pool');
+const clock=document.getElementById('clock'),startButton=document.getElementById('start'),resetButton=document.getElementById('reset'),status=document.getElementById('status');
+let elapsed=0,running=false,lastFrame=0,raf=0,spawnAccumulator=0,dropNumber=0;
+let drops=[],beads=[];
+function el(name,attrs){const node=document.createElementNS(svgNS,name);for(const [key,value] of Object.entries(attrs))node.setAttribute(key,value);return node}
+function addDrop(){
+ const tone=dropNumber++%2===0?'pink':'teal';
+ const node=el('g',{}),shadow=el('ellipse',{cx:0,cy:0,rx:9,ry:13,fill:tone==='pink'?'url(#pink)':'url(#teal)'});
+ const glint=el('ellipse',{cx:-3,cy:-5,rx:2.8,ry:4.2,fill:'white','fill-opacity':'.36'});
+ node.append(shadow,glint);dropsGroup.append(node);
+ drops.push({node,tone,age:0,duration:1900+Math.random()*800,offset:(Math.random()-.5)*8,radius:8+Math.random()*3});
+}
+function deposit(d){
+ const x=115+Math.random()*170,y=551-Math.random()*Math.min(60,6+elapsed/DURATION*70);
+ const n=el('ellipse',{cx:x,cy:y,rx:4+Math.random()*10,ry:3+Math.random()*8,fill:d.tone==='pink'?'url(#pink)':'url(#teal)',opacity:'.7'});
+ beadsGroup.append(n);beads.push(n);
+ if(beads.length>145){beads.shift().remove()}
+}
+function draw(){
+ const p=Math.min(1,elapsed/DURATION);
+ // The upper reservoir tapers gradually and drains by the end of the three minutes.
+ const level=89+p*208, bottom=295-p*10;
+ upper.setAttribute('d', 'M105 '+level+' Q200 '+(level-5)+' 295 '+level+' L295 '+(level+13)+' Q276 '+(level+54)+' 245 '+(level+100)+' L200 '+bottom+' L155 '+(level+100)+' Q124 '+(level+54)+' 105 '+(level+13)+'Z');
+ upper.setAttribute('opacity',String(Math.max(0,1-p*1.17)));
+ surface.setAttribute('d','M106 '+level+' Q154 '+(level-6)+' 200 '+level+' T294 '+level);
+ surface.setAttribute('opacity',String(Math.max(0,1-p)));
+ const top=556-p*110;
+ pool.setAttribute('d', 'M105 '+top+' Q151 '+(top-8)+' 200 '+top+' T295 '+top+' L295 567 L105 567Z');
+ pool.setAttribute('opacity',String(.3+.65*p));
+ for(const d of drops){
+   const t=Math.min(1,d.age/d.duration);
+   // Smooth acceleration, always directly below the central nozzle.
+   const y=302+247*t*t;
+   const x=200+d.offset*Math.sin(t*Math.PI);
+   d.node.setAttribute('transform','translate('+x+' '+y+') scale('+(1+.16*Math.sin(t*Math.PI))+')');
+   d.node.setAttribute('opacity',String(Math.min(1,(1-t)*5)));
+ }
+ const seconds=Math.ceil((DURATION-elapsed)/1000);
+ clock.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+}
+function tick(now){
+ if(!running)return;
+ const delta=Math.min(80,now-lastFrame);lastFrame=now;
+ elapsed=Math.min(DURATION,elapsed+delta);
+ spawnAccumulator+=delta;
+ while(spawnAccumulator>=1300&&elapsed<DURATION){spawnAccumulator-=1300;addDrop()}
+ for(let i=drops.length-1;i>=0;i--){
+  const d=drops[i];d.age+=delta;
+  if(d.age>=d.duration){deposit(d);d.node.remove();drops.splice(i,1)}
+ }
+ draw();
+ if(elapsed>=DURATION){running=false;startButton.textContent='もう一度';status.textContent='3分が経過しました。';return}
+ raf=requestAnimationFrame(tick);
+}
+startButton.addEventListener('click',()=>{
+ if(elapsed>=DURATION){reset()}
+ if(running){running=false;cancelAnimationFrame(raf);startButton.textContent='再開';status.textContent='一時停止中';return}
+ running=true;lastFrame=performance.now();startButton.textContent='一時停止';status.textContent='オイルがゆっくり落ちています';raf=requestAnimationFrame(tick);
+});
+function reset(){
+ running=false;cancelAnimationFrame(raf);elapsed=0;spawnAccumulator=0;dropNumber=0;
+ drops.forEach(d=>d.node.remove());beads.forEach(n=>n.remove());drops=[];beads=[];
+ startButton.textContent='スタート';status.textContent='静かな3分間を。';draw();
+}
+resetButton.addEventListener('click',reset);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&running){running=false;cancelAnimationFrame(raf);startButton.textContent='再開';status.textContent='一時停止中'}});
+draw();
+})();
+</script>
+</body>
+</html>
