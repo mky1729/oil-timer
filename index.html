@@ -148,13 +148,13 @@ maskedScene.mask=maskShape;
 
 const topOil=new PIXI.Graphics();
 const pool=new PIXI.Graphics();
-const nozzle=new PIXI.Graphics();
 const topHighlight=new PIXI.Graphics();
-oilLayer.addChild(topOil,pool,nozzle,topHighlight);
+oilLayer.addChild(topOil,pool,topHighlight);
 
 // SVG blur + alpha contrast is supported independently of Pixi's WebGL shaders.
 const svgNS='http://www.w3.org/2000/svg';
 const joinGroups={pink:document.getElementById('join-pink'),teal:document.getElementById('join-teal')};
+const reservoirNodes={};
 let joinsEnabled=typeof window.SVGFEGaussianBlurElement!=='undefined';
 function ellipseNode(parent,x,y,rx,ry){
  const node=document.createElementNS(svgNS,'ellipse');
@@ -168,7 +168,9 @@ function resetJoins(){
  if(!joinsEnabled)return;
  for(const kind of ['pink','teal']){
   const group=joinGroups[kind];group.replaceChildren();
-  ellipseNode(group,kind==='pink'?197:203,182,7,20);
+  // Fuse the actual reservoir with the forming drop; no permanent nozzle shape.
+  const reservoir=document.createElementNS(svgNS,'path');
+  group.appendChild(reservoir);reservoirNodes[kind]=reservoir;
   ellipseNode(group,kind==='pink'?171:229,557,77,13);
  }
 }
@@ -223,10 +225,11 @@ function makeDrop(kind,side){
  drawBlob(g,oilColor(kind),.48,r,ry);
  g.blendMode=PIXI.BLEND_MODES.NORMAL;
  dropLayer.addChild(g);
- droplets.push({g,kind,side,x:200+side*4,y:198,
+ droplets.push({g,kind,side,x:200+side*4,y:184,
   vy:13+Math.random()*4,wobble:Math.random()*Math.PI*2,
   age:0,r,ry,sx:1,sy:1,spread:24+Math.random()*22});
- g.position.set(200+side*4,198);
+ g.position.set(200+side*4,184);
+ g.scale.set(.4);
 }
 
 function makeBead(kind,x,y,r){
@@ -252,6 +255,7 @@ function deposit(drop){
 
 function drawStaticOil(){
  const wave=Math.sin(time*.25)*2;
+ topOil.visible=!joinsEnabled;
  topOil.clear();
  // Two shallow reservoirs taper internally into the same central outlet.
  for(const [color,offset] of [[0xff40ad,-3],[0x13cfc7,3]]){
@@ -262,15 +266,14 @@ function drawStaticOil(){
   topOil.bezierCurveTo(284,163,238,175,200+offset,189);
   topOil.bezierCurveTo(162,175,116,163,94,145+offset);
   topOil.closePath();topOil.endFill();
+  if(joinsEnabled&&reservoirNodes[offset<0?'pink':'teal']){
+   reservoirNodes[offset<0?'pink':'teal'].setAttribute('d',
+    `M94 ${94+offset} C150 ${91+wave+offset} 250 ${98-wave+offset} 306 ${94+offset} L306 ${145+offset} C284 163 238 175 ${200+offset} 189 C162 175 116 163 94 ${145+offset} Z`);
+  }
  }
  topHighlight.clear();
  topHighlight.lineStyle(1,0xffffff,.28);
  topHighlight.moveTo(96,94);topHighlight.bezierCurveTo(154,90+wave,249,98-wave,304,94);
- nozzle.visible=!joinsEnabled;
- nozzle.clear();
- for(const [color,x] of [[0xff55b7,197],[0x12d7ca,203]]){
-  nozzle.beginFill(color,.46);nozzle.drawEllipse(x,190,5,12);nozzle.endFill();
- }
  pool.visible=!joinsEnabled;
  pool.clear();
  for(const [color,x] of [[0xff4eb4,171],[0x13cfc7,229]]){
@@ -302,9 +305,10 @@ function resetOil(){
  for(let i=0;i<8;i++){
   makeDrop(i%2?'teal':'pink',i%2?1:-1);
   const d=droplets[droplets.length-1];
-  d.age=2+i*2.5;d.y=198+d.age*d.vy;
+  d.age=2+i*2.5;d.y=184+d.age*d.vy;
   d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
   d.g.position.set(d.x,d.y);
+  d.g.scale.set(1);
  }
  updateJoins();
 }
@@ -339,7 +343,7 @@ function filterAliveDrops(dt){
   d.x=200+d.side*4+Math.sin(d.age*.32+d.wobble)*d.spread*Math.min(1,d.age/7);
   d.g.position.set(d.x,d.y);
   d.g.rotation=Math.sin(d.age*.45+d.wobble)*.12;
-  const growth=.4+.6*Math.min(1,d.age/1.1);
+  const growth=.4+.6*Math.min(1,d.age/1.5);
   const flatten=Math.max(0,(d.y-512)/24);
   d.sx=growth*(1+Math.sin(d.age*.65)*.05+flatten*.2);
   d.sy=growth*(1+Math.cos(d.age*.55)*.04-flatten*.22);
