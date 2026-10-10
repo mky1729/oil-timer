@@ -51,7 +51,7 @@ button.primary:hover{background:#375955}
   </header>
   <div class="timer-stage" aria-label="透明容器の中央からピンクと青緑のオイルが落ちるアニメーション">
    <div id="pixi-stage"></div>
-   <svg id="liquid-joins" class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
+   <svg id="liquid-joins" style="mix-blend-mode:multiply" class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
     <defs>
      <filter id="liquid-fuse" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
       <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="soft"/>
@@ -63,13 +63,27 @@ button.primary:hover{background:#375955}
       <stop offset=".411" stop-color="black"/><stop offset=".782" stop-color="black"/>
       <stop offset=".837" stop-color="white"/><stop offset="1" stop-color="white"/>
      </linearGradient>
+     <linearGradient id="free-zones" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="black"/><stop offset=".355" stop-color="black"/>
+      <stop offset=".411" stop-color="white"/><stop offset=".782" stop-color="white"/>
+      <stop offset=".837" stop-color="black"/><stop offset="1" stop-color="black"/>
+     </linearGradient>
+     <mask id="free-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="620">
+      <rect width="400" height="620" fill="url(#free-zones)"/>
+     </mask>
      <mask id="join-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="620">
       <rect width="400" height="620" fill="url(#join-zones)"/>
      </mask>
     </defs>
-    <g clip-path="url(#liquid-interior)" mask="url(#join-mask)">
-     <g opacity=".72"><g id="join-pink" fill="#ff00b8" filter="url(#liquid-fuse)"></g></g>
-     <g opacity=".72"><g id="join-teal" fill="#00c4df" filter="url(#liquid-fuse)"></g></g>
+    <g clip-path="url(#liquid-interior)">
+     <g opacity=".58" fill="#ff00d8" style="mix-blend-mode:multiply">
+      <g mask="url(#join-mask)"><g id="join-pink" filter="url(#liquid-fuse)"></g></g>
+      <g id="free-pink" mask="url(#free-mask)"></g>
+     </g>
+     <g opacity=".72" fill="#00c4ff" style="mix-blend-mode:multiply">
+      <g mask="url(#join-mask)"><g id="join-teal" filter="url(#liquid-fuse)"></g></g>
+      <g id="free-teal" mask="url(#free-mask)"></g>
+     </g>
     </g>
    </svg>
    <svg class="glass-overlay" viewBox="0 0 400 620" aria-hidden="true">
@@ -174,6 +188,7 @@ oilLayer.addChild(topOil,pool,topHighlight);
 const svgNS='http://www.w3.org/2000/svg';
 const joinGroups={pink:document.getElementById('join-pink'),teal:document.getElementById('join-teal')};
 const reservoirNodes={};
+const freeGroups={pink:document.getElementById('free-pink'),teal:document.getElementById('free-teal')};
 let joinsEnabled=typeof window.SVGFEGaussianBlurElement!=='undefined';
 function ellipseNode(parent,x,y,rx,ry){
  const node=document.createElementNS(svgNS,'ellipse');
@@ -187,6 +202,7 @@ function resetJoins(){
  if(!joinsEnabled)return;
  for(const kind of ['pink','teal']){
   const group=joinGroups[kind];group.replaceChildren();
+  freeGroups[kind].replaceChildren();
   // Fuse the actual reservoir with the forming drop; no permanent nozzle shape.
   const reservoir=document.createElementNS(svgNS,'path');
   group.appendChild(reservoir);reservoirNodes[kind]=reservoir;
@@ -198,7 +214,11 @@ function updateJoins(){
  try{
   for(const d of droplets){
    const strength=joinStrength(d.y);
-   d.g.alpha=1-strength;
+   d.g.alpha=0;
+   if(!d.freeNode)d.freeNode=ellipseNode(freeGroups[d.kind],d.x,d.y,d.r,d.ry);
+   d.freeNode.setAttribute('cx',d.x);d.freeNode.setAttribute('cy',d.y);
+   d.freeNode.setAttribute('rx',d.r*d.sx);d.freeNode.setAttribute('ry',d.ry*d.sy);
+   d.freeNode.setAttribute('transform','rotate('+d.g.rotation*180/Math.PI+' '+d.x+' '+d.y+')');
    if(strength>0){
     if(!d.joinNode)d.joinNode=ellipseNode(joinGroups[d.kind],d.x,d.y,d.r,d.ry);
     d.joinNode.setAttribute('cx',d.x);d.joinNode.setAttribute('cy',d.y);
@@ -224,7 +244,7 @@ function drawInteriorMask(){
 }
 
 function oilColor(kind){
- return kind==='pink'?0xff00b8:0x00c4df;
+ return kind==='pink'?0xff00d8:0x00c4ff;
 }
 
 // Flat, translucent lenses: source-over compositing preserves both colors at overlaps.
@@ -241,7 +261,7 @@ function makeDrop(kind,side){
  const g=new PIXI.Graphics();
  const r=19+Math.random()*6;
  const ry=r*(.86+Math.random()*.22);
- drawBlob(g,oilColor(kind),.72,r,ry);
+ drawBlob(g,oilColor(kind),kind==='pink'?.58:.72,r,ry);
  g.blendMode=PIXI.BLEND_MODES.NORMAL;
  dropLayer.addChild(g);
  droplets.push({g,kind,side,x:200+side*4,y:184,
@@ -254,7 +274,7 @@ function makeDrop(kind,side){
 function makeBead(kind,x,y,r){
  const g=new PIXI.Graphics();
  const ry=r*(.58+Math.random()*.35);
- drawBlob(g,oilColor(kind),.72+Math.random()*.06,r,ry);
+ drawBlob(g,oilColor(kind),kind==='pink'?.58:.72,r,ry);
  g.rotation=(Math.random()-.5)*.7;
  beadLayer.addChild(g);
  g.position.set(x,y);
@@ -277,8 +297,8 @@ function drawStaticOil(){
  topOil.visible=!joinsEnabled;
  topOil.clear();
  // Two shallow reservoirs taper internally into the same central outlet.
- for(const [color,offset] of [[0xff00b8,-3],[0x00c4df,3]]){
-  topOil.beginFill(color,.72);
+ for(const [color,offset] of [[0xff00d8,-3],[0x00c4ff,3]]){
+  topOil.beginFill(color,offset<0?.58:.72);
   topOil.moveTo(94,94+offset);
   topOil.bezierCurveTo(150,91+wave+offset,250,98-wave+offset,306,94+offset);
   topOil.lineTo(306,145+offset);
@@ -295,8 +315,8 @@ function drawStaticOil(){
  topHighlight.moveTo(96,94);topHighlight.bezierCurveTo(154,90+wave,249,98-wave,304,94);
  pool.visible=!joinsEnabled;
  pool.clear();
- for(const [color,x] of [[0xff00b8,171],[0x00c4df,229]]){
-  pool.beginFill(color,.72);pool.drawEllipse(x,557,77,15);pool.endFill();
+ for(const [color,x] of [[0xff00d8,171],[0x00c4ff,229]]){
+  pool.beginFill(color,x<200?.58:.72);pool.drawEllipse(x,557,77,15);pool.endFill();
  }
 }
 
@@ -367,7 +387,7 @@ function filterAliveDrops(dt){
   d.sx=growth*(1+Math.sin(d.age*.65)*.05+flatten*.2);
   d.sy=growth*(1+Math.cos(d.age*.55)*.04-flatten*.22);
   d.g.scale.set(d.sx,d.sy);
-  if(d.y>=536){deposit(d);if(d.joinNode)d.joinNode.remove();d.g.destroy();}else{alive.push(d);}
+  if(d.y>=536){deposit(d);if(d.joinNode)d.joinNode.remove();if(d.freeNode)d.freeNode.remove();d.g.destroy();}else{alive.push(d);}
  });
  return alive;
 }
